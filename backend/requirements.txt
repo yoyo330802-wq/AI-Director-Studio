@@ -1,0 +1,31 @@
+# 漫AI - 后端依赖
+
+# Web框架
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+pydantic-settings==2.1.0
+python-multipart==0.0.9
+
+# 认证
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# 数据库
+sqlalchemy==2.0.25
+asyncpg==0.29.0
+redis==5.0.1
+
+# 任务队列
+celery==5.3.6
+
+# HTTP客户端
+httpx==0.26.0
+
+# 重试
+tenacity==8.2.3
+
+# 日志
+loguru==0.7.2
+
+# 工具
+python-dotenv==1.0.0
