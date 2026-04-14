@@ -37,9 +37,11 @@ class Settings(BaseSettings):
     WAN21_BASE_URL: str = os.getenv("WAN21_BASE_URL", "http://wan21.internal.manai.com")
     WAN21_API_KEY: str = os.getenv("WAN21_API_KEY", "")
 
-    # ComfyUI
+    # ComfyUI / Wan2.1
     COMFYUI_URL: str = os.getenv("COMFYUI_URL", "http://localhost:8188")
     COMFYUI_API_KEY: str = os.getenv("COMFYUI_API_KEY", "")
+    WAN21_COMFYUI_URL: str = os.getenv("WAN21_COMFYUI_URL", "http://localhost:8188")
+    WAN21_COMFYUI_API_KEY: str = os.getenv("WAN21_COMFYUI_API_KEY", "")
     
     # 计费配置
     PRICING: ClassVar[dict] = {
