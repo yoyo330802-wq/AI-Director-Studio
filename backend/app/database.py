@@ -1,50 +1,79 @@
 # 数据库连接配置
 
-from sqlmodel import SQLModel
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, AsyncSession
+from sqlmodel import SQLModel, Session, create_engine
 from sqlalchemy.orm import sessionmaker
-from typing import AsyncGenerator
-
+from typing import Generator
 from app.config import settings
 
-engine: AsyncEngine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    future=True,
-)
+# 判断是否异步数据库
+is_async_db = "+aiosqlite" in settings.DATABASE_URL or "+asyncpg" in settings.DATABASE_URL
 
-AsyncSessionLocal = sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+if is_async_db:
+    from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, AsyncSession
+    _async_engine: AsyncEngine = create_async_engine(
+        settings.DATABASE_URL,
+        echo=settings.DEBUG,
+        future=True,
+    )
+    AsyncSessionLocal = sessionmaker(
+        _async_engine, class_=AsyncSession, expire_on_commit=False
+    )
+    engine = None
+    SessionLocal = None
+else:
+    # 同步引擎 (支持 SQLite for dev)
+    engine = create_engine(
+        settings.DATABASE_URL.replace("sqlite:///", "sqlite:///"),
+        echo=settings.DEBUG,
+        connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
+    )
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    _async_engine = None
+    AsyncSessionLocal = None
 
 
 async def init_db():
     """初始化数据库 - 创建所有表"""
-    from app.models.workflow import Workflow
-    from app.models.node_type import NodeType
     from app.models.user import User
     from app.models.task import GenerationTask
 
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
+    if is_async_db:
+        async with _async_engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.create_all)
+    else:
+        with engine.begin() as conn:
+            SQLModel.metadata.create_all(bind=conn)
     print("✅ Database tables created")
 
 
 async def close_db():
     """关闭数据库连接"""
-    await engine.dispose()
+    if is_async_db:
+        await _async_engine.dispose()
+    else:
+        engine.dispose()
 
 
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_session() -> Generator[Session, None, None]:
     """获取数据库会话 - 依赖注入使用"""
-    async with AsyncSessionLocal() as session:
+    if is_async_db:
+        async with AsyncSessionLocal() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
+    else:
+        session = SessionLocal()
         try:
             yield session
-            await session.commit()
+            session.commit()
         except Exception:
-            await session.rollback()
+            session.rollback()
             raise
         finally:
-            await session.close()
+            session.close()
+

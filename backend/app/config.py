@@ -2,7 +2,7 @@
 漫AI - 配置文件
 """
 import os
-from typing import List
+from typing import List, ClassVar
 from pydantic_settings import BaseSettings
 
 
@@ -36,16 +36,20 @@ class Settings(BaseSettings):
     # Wan2.1自建集群
     WAN21_BASE_URL: str = os.getenv("WAN21_BASE_URL", "http://wan21.internal.manai.com")
     WAN21_API_KEY: str = os.getenv("WAN21_API_KEY", "")
+
+    # ComfyUI
+    COMFYUI_URL: str = os.getenv("COMFYUI_URL", "http://localhost:8188")
+    COMFYUI_API_KEY: str = os.getenv("COMFYUI_API_KEY", "")
     
     # 计费配置
-    PRICING = {
+    PRICING: ClassVar[dict] = {
         "fast": 0.04,      # Wan2.1-1.3B
         "balanced": 0.06,   # 智能路由
         "premium": 0.09,   # Vidu/可灵
     }
-    
+
     # 成本配置
-    COSTS = {
+    COSTS: ClassVar[dict] = {
         "wan21_1.3b": 0.012,
         "wan21_14b": 0.025,
         "vidu": 0.050,
@@ -55,7 +59,11 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
+    # 调试模式
+    DEBUG: bool = False
+
     class Config:
+        extra = "ignore"  # 允许额外的环境变量
         env_file = ".env"
         case_sensitive = True
 
