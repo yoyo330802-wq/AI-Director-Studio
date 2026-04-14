@@ -3,7 +3,9 @@
  */
 import axios, { AxiosInstance, AxiosError } from 'axios'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+// 本地开发: 通过 Next.js rewrite 代理
+// 生产: 直接请求
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
 class ApiClient {
   private client: AxiosInstance
@@ -11,7 +13,7 @@ class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: API_BASE_URL,
+      baseURL: API_BASE_URL || '/api',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -34,7 +36,6 @@ class ApiClient {
       (response) => response,
       (error: AxiosError) => {
         if (error.response?.status === 401) {
-          // Token过期，清除
           this.token = null
           if (typeof window !== 'undefined') {
             localStorage.removeItem('token')
@@ -64,28 +65,33 @@ class ApiClient {
     return null
   }
 
-  // ============ 用户相关 ============
+  // ============ 认证相关 ============
 
-  async register(username: string, email: string, password: string) {
-    const response = await this.client.post('/v1/users/register', {
-      username,
+  async register(name: string, email: string, password: string) {
+    const response = await this.client.post('/v1/auth/register', {
+      name,
       email,
       password,
     })
     return response.data
   }
 
-  async login(username: string, password: string) {
-    const formData = new URLSearchParams()
-    formData.append('username', username)
-    formData.append('password', password)
-    
-    const response = await this.client.post('/v1/users/login', formData, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  async login(email: string, password: string) {
+    const response = await this.client.post('/v1/auth/login', {
+      email,
+      password,
     })
-    this.setToken(response.data.access_token)
+    if (response.data.access_token) {
+      this.setToken(response.data.access_token)
+    }
     return response.data
   }
+
+  async logout() {
+    this.setToken(null)
+  }
+
+  // ============ 用户相关 ============
 
   async getCurrentUser() {
     const response = await this.client.get('/v1/users/me')
@@ -93,18 +99,18 @@ class ApiClient {
   }
 
   async getBalance() {
-    const response = await this.client.get('/v1/users/balance')
-    return response.data
+    const response = await this.client.get('/v1/users/me')
+    return { balance: response.data.token_balance }
   }
 
   // ============ 生成相关 ============
 
   async createTask(params: {
-    mode: 'fast' | 'balanced' | 'premium'
+    mode?: 'fast' | 'balanced' | 'premium'
     prompt: string
     negative_prompt?: string
-    duration: 5 | 10
-    aspect_ratio: '16:9' | '9:16' | '1:1'
+    duration?: 5 | 10
+    aspect_ratio?: '16:9' | '9:16' | '1:1'
     resolution?: '480p' | '720p' | '1080p'
     image_url?: string
   }) {

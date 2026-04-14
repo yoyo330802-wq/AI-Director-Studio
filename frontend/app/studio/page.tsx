@@ -170,7 +170,7 @@ export default function StudioPage() {
       return
     }
     
-    if (user && user.balance < estimatedCost) {
+    if (user && user.token_balance < estimatedCost) {
       toast.error('余额不足，请充值')
       return
     }
@@ -214,7 +214,7 @@ export default function StudioPage() {
                 <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
                   <span className="text-sm text-gray-600">账户余额</span>
                   <span className="text-xl font-bold text-green-600">
-                    {user?.balance?.toFixed(2) || '0.00'}
+                    {user?.token_balance?.toFixed(2) || '0.00'}
                   </span>
                 </div>
                 <button className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">

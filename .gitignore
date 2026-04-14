@@ -1,0 +1,32 @@
+# Dependencies
+frontend/node_modules/
+backend/__pycache__/
+backend/.pytest_cache/
+
+# Build outputs
+frontend/.next/
+frontend/out/
+
+# Environment
+.env
+*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+
+# Uvicorn
+*.pid
