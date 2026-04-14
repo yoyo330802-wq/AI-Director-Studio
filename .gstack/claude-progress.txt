@@ -1,0 +1,91 @@
+# 漫AI - 跨Session进度传递
+
+## 项目信息
+- 名称: 漫AI - 动漫创作Token平台
+- 定位: 专业动漫团队AI生产力工具 + 知识库
+- 核心价值: 免费算力获客 → 高质量作品变现
+
+## 开发历史
+
+### 2026-04-14
+- Phase 0: YC问法验证需求
+  - 核心痛点: 专业动漫公司贵/慢/质量差，人工为主
+  - 目标客户: 同行工作室
+  - 商业路径: 免费 → 获客 → 质量变现
+- Phase 1: Initializer 创建项目骨架
+  - .gstack/feature-list.json
+  - .gstack/init.sh
+  - .gstack/claude-progress.txt
+
+## Sprint计划
+
+### S1: 后端核心 (当前)
+- F001: 用户系统
+- F002: 视频生成任务
+- F003: 智能路由引擎
+- F004: 计费系统
+
+### S2: 前端工作台
+- F005: /studio 创作页面
+
+## Phase 1 输出
+- ✅ .gstack/feature-list.json
+- ✅ .gstack/init.sh
+- ✅ .gstack/claude-progress.txt
+- ✅ .gstack/spec.md
+- ✅ .gstack/eval-rubric.md
+
+## 当前状态
+Phase 2 Generator 完成，S1 后端核心代码实现完毕
+
+## Phase 2 输出 (Sprint 1 实现)
+### Models
+- ✅ app/models/user.py - User 模型
+- ✅ app/models/task.py - GenerationTask 模型
+
+### Core
+- ✅ app/core/security.py - JWT + bcrypt
+
+### Services
+- ✅ app/services/billing.py - 计费逻辑
+- ✅ app/services/router.py - 智能路由
+
+### Clients
+- ✅ app/clients/comfyui_client.py - ComfyUI 客户端
+- ✅ app/clients/siliconflow_client.py - 硅基流动客户端
+
+### API Routes
+- ✅ app/api/auth.py - /api/v1/auth/register, /login
+- ✅ app/api/users.py - /api/v1/users/me
+- ✅ app/api/generate.py - /api/v1/generate
+- ✅ app/api/websocket.py - /ws/tasks/{task_id}
+
+### Tasks
+- ✅ app/tasks/video_generation.py - Celery 任务
+
+### Main
+- ✅ app/main.py - FastAPI 入口
+- ✅ requirements.txt - 添加 celery
+
+### Fixes
+- ✅ database.py - 修复 import Model bug
+
+## 架构纠正记录
+- 漫AI = ComfyUI Orchestrator (同一个项目)
+- Wan2.1 在 ComfyUI 内作为 Custom Node 执行
+- 智能路由 = 选择 ComfyUI(H100) 还是 硅基流动(Vidu/KLing)
+- 修正前错误地把 Wan2.1/SiliconFlow/Vidu 当作独立 API 客户端
+
+## Phase 1 输出
+- ✅ .gstack/feature-list.json
+- ✅ .gstack/init.sh
+- ✅ .gstack/claude-progress.txt
+- ✅ .gstack/spec.md (已纠正架构)
+- ✅ .gstack/eval-rubric.md
+
+## 技术栈
+- Frontend: Next.js 14
+- Backend: FastAPI + SQLModel + Pydantic v2
+- Database: PostgreSQL + Redis
+- Task Queue: Celery
+- 上游: Wan2.1(自建H100) + 硅基流动 + Vidu

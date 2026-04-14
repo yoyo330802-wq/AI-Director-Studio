@@ -1,0 +1,626 @@
+========== 代码质量检查 2026年 04月 11日 星期六 15:02:44 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:  2390 总计
+  TypeScript:  1021 总计
+========== 检查完成 2026年 04月 11日 星期六 15:02:47 CST ==========
+
+========== 代码质量检查 2026年 04月 11日 星期六 18:06:34 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:  2390 总计
+  TypeScript:  1021 总计
+========== 检查完成 2026年 04月 11日 星期六 18:06:35 CST ==========
+
+========== 代码质量检查 2026年 04月 11日 星期六 21:02:44 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:  2390 总计
+  TypeScript:  1021 总计
+========== 检查完成 2026年 04月 11日 星期六 21:02:46 CST ==========
+
+========== 代码质量检查 2026年 04月 11日 星期六 21:02:50 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:  2390 总计
+  TypeScript:  1021 总计
+========== 检查完成 2026年 04月 11日 星期六 21:02:51 CST ==========
+
+========== 代码质量检查 2026年 04月 12日 星期日 00:05:08 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:  2390 总计
+  TypeScript:  1021 总计
+========== 检查完成 2026年 04月 12日 星期日 00:05:10 CST ==========
+
+========== 代码质量检查 2026年 04月 12日 星期日 03:04:21 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:  2390 总计
+  TypeScript:  1021 总计
+========== 检查完成 2026年 04月 12日 星期日 03:04:24 CST ==========
+
+========== 代码质量检查 2026年 04月 12日 星期日 06:06:51 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:  2390 总计
+  TypeScript:  1021 总计
+========== 检查完成 2026年 04月 12日 星期日 06:06:53 CST ==========
+
+========== 代码质量检查 2026年 04月 12日 星期日 09:03:54 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:  2390 总计
+  TypeScript:  1021 总计
+========== 检查完成 2026年 04月 12日 星期日 09:03:56 CST ==========
+
+========== 代码质量检查 2026年 04月 12日 星期日 12:05:02 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 12日 星期日 12:05:04 CST ==========
+
+========== 代码质量检查 2026年 04月 12日 星期日 15:03:52 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 12日 星期日 15:03:55 CST ==========
+
+========== 代码质量检查 2026年 04月 12日 星期日 18:06:18 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 12日 星期日 18:06:20 CST ==========
+
+========== 代码质量检查 2026年 04月 12日 星期日 21:02:44 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 12日 星期日 21:02:47 CST ==========
+
+========== 代码质量检查 2026年 04月 13日 星期一 00:07:29 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 13日 星期一 00:07:34 CST ==========
+
+========== 代码质量检查 2026年 04月 13日 星期一 03:02:43 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 13日 星期一 03:02:48 CST ==========
+
+========== 代码质量检查 2026年 04月 13日 星期一 06:05:49 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 13日 星期一 06:05:52 CST ==========
+
+========== 代码质量检查 2026年 04月 13日 星期一 09:06:29 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 13日 星期一 09:06:32 CST ==========
+
+========== 代码质量检查 2026年 04月 13日 星期一 12:11:16 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 13日 星期一 12:11:19 CST ==========
+
+========== 代码质量检查 2026年 04月 13日 星期一 12:24:12 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 13日 星期一 12:24:15 CST ==========
+
+========== 代码质量检查 2026年 04月 13日 星期一 18:07:33 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 13日 星期一 18:07:36 CST ==========
+
+========== 代码质量检查 2026年 04月 13日 星期一 21:02:46 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 13日 星期一 21:02:49 CST ==========
+
+========== 代码质量检查 2026年 04月 14日 星期二 00:06:26 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+
+[41m                                                                               [0m
+[41m[37m                This is not the tsc command you are looking for                [0m
+[41m                                                                               [0m
+
+To get access to the TypeScript compiler, [34mtsc[0m, from the command line either:
+
+- Use [1mnpm install typescript[0m to first add TypeScript to your project [1mbefore[0m using npx
+- Use [1myarn[0m to avoid accidentally running code from un-installed packages
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5186 总计
+  TypeScript:   3787 总计
+========== 检查完成 2026年 04月 14日 星期二 00:06:28 CST ==========
+
+========== 代码质量检查 2026年 04月 14日 星期二 06:05:21 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5189 总计
+  TypeScript:  122603 总计
+========== 检查完成 2026年 04月 14日 星期二 06:05:24 CST ==========
+
+========== 代码质量检查 2026年 04月 14日 星期二 09:02:45 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   5189 总计
+  TypeScript:  122603 总计
+========== 检查完成 2026年 04月 14日 星期二 09:02:47 CST ==========
+

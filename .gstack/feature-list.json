@@ -1,0 +1,78 @@
+{
+  "project": "漫AI / ComfyUI Orchestrator",
+  "version": "0.1.0",
+  "created": "2026-04-14",
+  "description": "专业动漫团队AI生产力工具 - ComfyUI工作流编排 + 漫AI品牌(用户+计费+路由)",
+  "features": [
+    {
+      "id": "F001",
+      "category": "core",
+      "name": "用户系统",
+      "description": "注册/登录/Token余额管理",
+      "steps": [
+        "POST /api/v1/auth/register - 注册获得100初始Token",
+        "POST /api/v1/auth/login - 登录返回JWT",
+        "GET /api/v1/users/me - 查看用户信息和余额"
+      ],
+      "passes": false,
+      "priority": "P0",
+      "sprint": "S1"
+    },
+    {
+      "id": "F002",
+      "category": "core",
+      "name": "计费系统",
+      "description": "Token预付费 + 实时扣费",
+      "steps": [
+        "提交任务前检查余额，不足返回402",
+        "生成完成后按 duration × 单价 扣费",
+        "cost模式: ¥0.04/秒, balanced: ¥0.06/秒, quality: ¥0.09/秒"
+      ],
+      "passes": false,
+      "priority": "P0",
+      "sprint": "S1"
+    },
+    {
+      "id": "F003",
+      "category": "core",
+      "name": "智能路由引擎",
+      "description": "根据quality_mode选择执行路径",
+      "steps": [
+        "cost模式 → ComfyUI → Wan2.1 (H100集群)",
+        "quality模式 → 硅基流动API → Vidu",
+        "balanced模式 → 70% Wan2.1 + 30% Vidu",
+        "上游不可用时自动降级"
+      ],
+      "passes": false,
+      "priority": "P0",
+      "sprint": "S1"
+    },
+    {
+      "id": "F004",
+      "category": "core",
+      "name": "任务系统",
+      "description": "视频生成任务 + WebSocket进度推送",
+      "steps": [
+        "POST /api/v1/generate - 提交任务，返回task_id",
+        "Celery异步处理",
+        "WebSocket /ws/tasks/{task_id} - 实时推送0-100%进度",
+        "GET /api/v1/generate/{task_id} - 查询任务状态",
+        "完成后返回视频URL"
+      ],
+      "passes": false,
+      "priority": "P0",
+      "sprint": "S1"
+    }
+  ],
+  "sprints": [
+    {
+      "id": "S1",
+      "name": "后端核心",
+      "features": ["F001", "F002", "F003", "F004"],
+      "contract": {
+        "deliverables": "完整后端API: 用户注册登录、Token计费、3模式路由、任务系统+WebSocket",
+        "test_criteria": "curl测试所有endpoint通过，JWT有效，余额检查正确，WebSocket可连接"
+      }
+    }
+  ]
+}

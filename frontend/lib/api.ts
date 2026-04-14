@@ -150,6 +150,17 @@ class ApiClient {
     const response = await this.client.get('/v1/bill/packages')
     return response.data
   }
+
+  // 通用方法
+  async get<T = any>(url: string, config?: any): Promise<T> {
+    const response = await this.client.get(url, config)
+    return response.data
+  }
+
+  async post<T = any>(url: string, data?: any, config?: any): Promise<T> {
+    const response = await this.client.post(url, data, config)
+    return response.data
+  }
 }
 
 export const api = new ApiClient()

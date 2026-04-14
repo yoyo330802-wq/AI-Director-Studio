@@ -2,16 +2,21 @@
 漫AI - 配置文件
 """
 import os
+from typing import List
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     """应用配置"""
-    
+
+    # 应用信息
+    APP_NAME: str = "漫AI - 动漫创作Token平台"
+    VERSION: str = "0.1.0"
+
     # 数据库
     DATABASE_URL: str = os.getenv(
-        "DATABASE_URL", 
-        "postgresql://manai:manai123@localhost:5432/manai"
+        "DATABASE_URL",
+        "postgresql+asyncpg://manai:manai123@localhost:5432/manai"
     )
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     
@@ -47,6 +52,9 @@ class Settings(BaseSettings):
         "kling": 0.070,
     }
     
+    # CORS
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+
     class Config:
         env_file = ".env"
         case_sensitive = True
