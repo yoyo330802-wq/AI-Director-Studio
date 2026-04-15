@@ -25,7 +25,8 @@ class SiliconFlowClient:
         model: str,  # "vidu" | "kling"
         prompt: str,
         duration: int = 5,
-        aspect_ratio: str = "16:9"
+        aspect_ratio: str = "16:9",
+        image_url: Optional[str] = None  # 参考图片URL (图生视频)
     ) -> Optional[str]:
         """提交视频生成任务
 
@@ -46,6 +47,10 @@ class SiliconFlowClient:
             "aspect_ratio": aspect_ratio,
             "with_text": True,
         }
+        
+        # 图生视频：添加参考图片
+        if image_url:
+            payload["image_url"] = image_url
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:

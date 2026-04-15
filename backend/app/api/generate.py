@@ -23,13 +23,32 @@ from app.tasks.video_generation import submit_generation_task
 router = APIRouter(prefix="/api/v1/generate", tags=["generate"])
 
 
-@router.post("", response_model=GenerationTaskSubmit, status_code=status.HTTP_202_ACCEPTED)
+@router.post("", response_model=GenerationTaskSubmit, status_code=status.HTTP_202_ACCEPTED, summary="提交视频生成任务", tags=["generate"])
 async def create_generation_task(
     task_data: GenerationTaskCreate,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """提交视频生成任务"""
+    """提交新的视频生成任务
+    
+    **认证**: 需要 Bearer Token
+    
+    **请求体**:
+    - **prompt**: 视频描述提示词（必填）
+    - **negative_prompt**: 反向提示词（可选）
+    - **duration**: 视频时长，5-30秒（必填）
+    - **quality_mode**: 质量模式 - fast/balanced/premium（必填）
+    - **aspect_ratio**: 宽高比 - 16:9/9:16/1:1（可选，默认16:9）
+    
+    **处理流程**:
+    1. 内容审核（敏感词检测）
+    2. 余额校验
+    3. 智能路由（选择最优执行路径）
+    4. 扣减Token
+    5. 提交Celery异步任务
+    
+    **返回**: task_id 和预估完成时间
+    """
     # 1. 内容审核 (Sprint 4: S4-F2)
     moderation_result = content_moderation_service.check_prompt(
         task_data.prompt,
@@ -74,6 +93,7 @@ async def create_generation_task(
         progress=0,
         token_cost=token_cost,
         execution_path=execution_path,
+        image_url=task_data.image_url,
     )
     session.add(task)
     await session.commit()
@@ -92,12 +112,24 @@ async def create_generation_task(
     )
 
 
-@router.get("/route/preview")
+@router.get("/route/preview", summary="路由预览", tags=["generate"])
 async def get_route_preview(
     mode: str = "balanced",
     duration: int = 5,
 ):
-    """路由预览 - 显示将使用的模型和预估信息"""
+    """预览视频生成的路由信息（无需认证）
+    
+    **参数**:
+    - **mode**: 质量模式 - fast/balanced/premium
+    - **duration**: 视频时长（秒），5-60秒
+    
+    **返回**:
+    - **execution_path**: 执行路径（comfyui_wan21/siliconflow_vidu/siliconflow_kling）
+    - **channel_name**: 上游通道名称
+    - **estimated_time**: 预估耗时（秒）
+    - **quality_score**: 质量评分（1-10）
+    - **token_cost**: Token消耗
+    """
     execution_path, upstream_name = get_execution_path(mode, duration)
     
     # 预估时间(秒)
@@ -120,13 +152,27 @@ async def get_route_preview(
     }
 
 
-@router.get("/{task_id}", response_model=GenerationTaskResponse)
+@router.get("/{task_id}", response_model=GenerationTaskResponse, summary="查询任务状态", tags=["generate"])
 async def get_generation_task(
     task_id: str,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """查询任务状态"""
+    """查询视频生成任务状态
+    
+    **认证**: 需要 Bearer Token
+    
+    **路径参数**:
+    - **task_id**: 任务ID（UUID）
+    
+    **返回**:
+    - **task_id**: 任务ID
+    - **status**: 任务状态（queued/pending/processing/completed/failed/cancelled）
+    - **progress**: 完成进度（0-100）
+    - **video_url**: 视频URL（完成后可用）
+    - **error**: 错误信息（失败时）
+    - **estimated_time**: 预估剩余时间
+    """
     result = await session.execute(
         select(GenerationTask).where(
             GenerationTask.id == task_id,
@@ -151,13 +197,23 @@ async def get_generation_task(
     )
 
 
-@router.delete("/{task_id}")
+@router.delete("/{task_id}", summary="取消任务", tags=["generate"])
 async def cancel_generation_task(
     task_id: str,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """取消任务 - 仅当状态为 queued/pending 时可取消"""
+    """取消视频生成任务
+    
+    **认证**: 需要 Bearer Token
+    
+    **路径参数**:
+    - **task_id**: 任务ID（UUID）
+    
+    **限制**: 仅当任务状态为 queued 或 pending 时可取消
+    
+    **返回**: 确认消息
+    """
     result = await session.execute(
         select(GenerationTask).where(
             GenerationTask.id == task_id,

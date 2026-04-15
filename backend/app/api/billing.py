@@ -13,7 +13,7 @@ from app.models.schemas import (
 )
 from app.core.security import get_current_user
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/bill", tags=["billing"])
 
 
 @router.get("/balance", response_model=BalanceResponse)
@@ -151,3 +151,166 @@ def get_packages():
             "features": ["SLA 99.5%", "私有部署", "定制开发"]
         }
     ]
+
+
+# ============ 按需计费 API (Sprint 6: S6-1) ============
+
+@router.get("/on-demand/pricing", summary="按需计费价格表", tags=["billing"])
+def get_on_demand_pricing():
+    """获取按需计费价格表
+    
+    返回各质量模式的每秒价格和预估生成时间
+    用于 Studio 界面实时显示费用预估
+    """
+    return {
+        "billing_type": "on_demand",
+        "currency": "CNY",
+        "modes": [
+            {
+                "id": "fast",
+                "name": "闪电模式",
+                "model": "Wan2.1-1.3B",
+                "price_per_second": 0.04,
+                "price_per_minute": 2.40,
+                "estimated_time_seconds": 15,
+                "max_duration_seconds": 5,
+                "features": ["text2video", "fast_generation"],
+                "quality_score": 6,
+            },
+            {
+                "id": "balanced",
+                "name": "智能模式",
+                "model": "智能路由",
+                "price_per_second": 0.06,
+                "price_per_minute": 3.60,
+                "estimated_time_seconds": 30,
+                "max_duration_seconds": 10,
+                "features": ["text2video", "image2video", "smart_routing"],
+                "quality_score": 7,
+            },
+            {
+                "id": "premium",
+                "name": "专业模式",
+                "model": "Vidu/可灵",
+                "price_per_second": 0.09,
+                "price_per_minute": 5.40,
+                "estimated_time_seconds": 60,
+                "max_duration_seconds": 10,
+                "features": ["text2video", "image2video", "anime_style", "motion_brush", "camera_control"],
+                "quality_score": 9,
+            },
+        ],
+        "image_to_video surcharge": {
+            "description": "图生视频需要使用专业模式",
+            "price_per_second": 0.09,
+            "applicable_modes": ["premium"],
+        },
+        "video_minutes_included": 0,
+        "note": "按需计费不计入套餐分钟数，单独按秒计费",
+    }
+
+
+@router.get("/on-demand/calculate", summary="计算预估费用", tags=["billing"])
+def calculate_estimate(
+    mode: str = Query("balanced", description="质量模式: fast/balanced/premium"),
+    duration: int = Query(5, ge=5, le=10, description="视频时长(秒)"),
+    image_url: str = Query(None, description="参考图片URL (可选，图生视频)"),
+):
+    """计算单次生成的预估费用
+    
+    用于用户提交任务前查看费用预览
+    """
+    pricing = {
+        "fast": {"price_per_second": 0.04, "max_duration": 5},
+        "balanced": {"price_per_second": 0.06, "max_duration": 10},
+        "premium": {"price_per_second": 0.09, "max_duration": 10},
+    }
+    
+    if mode not in pricing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"无效的质量模式: {mode}，可选: fast/balanced/premium"
+        )
+    
+    config = pricing[mode]
+    if duration > config["max_duration"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{mode} 模式最长支持 {config['max_duration']} 秒"
+        )
+    
+    # 图生视频必须用 premium 模式
+    if image_url and mode != "premium":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="图生视频仅支持专业模式 (premium)"
+        )
+    
+    cost = duration * config["price_per_second"]
+    tokens = int(cost * 100)  # 1元 = 100 Token
+    
+    return {
+        "mode": mode,
+        "duration_seconds": duration,
+        "image_url_provided": bool(image_url),
+        "estimated_cost_yuan": round(cost, 2),
+        "estimated_cost_tokens": tokens,
+        "estimated_time_seconds": {
+            "fast": 15,
+            "balanced": 30,
+            "premium": 60,
+        }.get(mode, 30),
+        "channel_recommended": {
+            "fast": "Wan2.1-1.3B (自建)",
+            "balanced": "智能路由",
+            "premium": "Vidu/可灵 (硅基流动)",
+        }.get(mode, "智能路由"),
+    }
+
+
+@router.get("/on-demand/compare", summary="套餐vs按需对比", tags=["billing"])
+def compare_package_vs_ondemand(
+    duration_minutes: int = Query(60, ge=1, le=1000, description="计划使用分钟数"),
+):
+    """对比套餐和按需计费的成本
+    
+    帮助用户选择最经济的方案
+    """
+    # 按需计费估算
+    ondemand_cost_per_minute = 0.06  # balanced 模式
+    ondemand_estimate = duration_minutes * ondemand_cost_per_minute
+    
+    # 套餐价格
+    packages = [
+        {"name": "体验版", "price": 0, "minutes": 5, "effective_per_minute": 0},
+        {"name": "创作者月卡", "price": 39, "minutes": 60, "effective_per_minute": 0.65},
+        {"name": "工作室季卡", "price": 199, "minutes": 300, "effective_per_minute": 0.66},
+        {"name": "企业年卡", "price": 9999, "minutes": 99999, "effective_per_minute": 0.10},
+    ]
+    
+    recommendations = []
+    for pkg in packages:
+        if duration_minutes <= pkg["minutes"]:
+            if pkg["price"] == 0:
+                recommendations.append({
+                    "package": pkg["name"],
+                    "cost": 0,
+                    "savings": ondemand_estimate,
+                    "recommended": True,
+                })
+            else:
+                savings = ondemand_estimate - pkg["price"]
+                recommendations.append({
+                    "package": pkg["name"],
+                    "cost": pkg["price"],
+                    "savings": max(0, savings),
+                    "recommended": savings > 0,
+                })
+    
+    return {
+        "usage_minutes": duration_minutes,
+        "ondemand_estimate_yuan": round(ondemand_estimate, 2),
+        "ondemand_estimate_tokens": int(ondemand_estimate * 100),
+        "package_recommendation": recommendations,
+        "best_option": recommendations[0]["package"] if recommendations else "按需计费",
+    }

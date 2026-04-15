@@ -103,6 +103,13 @@ class User(Base):
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
     videos = relationship("Video", back_populates="user", cascade="all, delete-orphan")
     
+    # 索引 (Sprint 5: S5-F2)
+    __table_args__ = (
+        Index('idx_users_level_active', level, is_active),
+        Index('idx_users_vip_expires', is_vip, vip_expires_at),
+        Index('idx_users_oauth', oauth_provider, oauth_id),
+    )
+    
     def __repr__(self):
         return f"<User {self.username}>"
 
@@ -144,6 +151,13 @@ class Order(Base):
     
     # 关系
     transactions = relationship("PaymentTransaction", back_populates="order", cascade="all, delete-orphan")
+    
+    # 索引 (Sprint 5: S5-F2)
+    __table_args__ = (
+        Index('idx_orders_user_status', user_id, status),
+        Index('idx_orders_user_created', user_id, created_at.desc()),
+        Index('idx_orders_package_status', package_id, status),
+    )
     
     def __repr__(self):
         return f"<Order {self.order_no}>"
@@ -246,6 +260,14 @@ class Task(Base):
     # 关系
     video = relationship("Video", back_populates="task", uselist=False)
     
+    # 索引 (Sprint 5: S5-F2)
+    __table_args__ = (
+        Index('idx_tasks_user_status', user_id, status),
+        Index('idx_tasks_user_created', user_id, created_at.desc()),
+        Index('idx_tasks_status_created', status, created_at.desc()),
+        Index('idx_tasks_channel_status', channel, status),
+    )
+    
     def __repr__(self):
         return f"<Task {self.task_no}>"
 
@@ -305,10 +327,12 @@ class Video(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # 索引
+    # 索引 (Sprint 5: S5-F2)
     __table_args__ = (
         Index('idx_videos_user_created', user_id, created_at.desc()),
         Index('idx_videos_public_created', is_public, created_at.desc()),
+        Index('idx_videos_featured_public', is_featured, is_public),
+        Index('idx_videos_category_public', category, is_public),
     )
     
     def __repr__(self):
@@ -345,6 +369,11 @@ class PaymentTransaction(Base):
     # 时间
     created_at = Column(DateTime, default=datetime.utcnow)
     paid_at = Column(DateTime, nullable=True)
+    
+    # 索引 (Sprint 5: S5-F2)
+    __table_args__ = (
+        Index('idx_payment_transactions_order_status', order_id, status),
+    )
     
     def __repr__(self):
         return f"<Transaction {self.transaction_no}>"

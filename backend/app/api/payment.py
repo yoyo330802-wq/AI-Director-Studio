@@ -219,13 +219,23 @@ wechat_service = WechatPayService() if hasattr(settings, 'WECHAT_APP_ID') else N
 
 # ============ 订单API ============
 
-@router.post("/create", response_model=RechargeResponse)
+@router.post("/create", response_model=RechargeResponse, summary="创建充值订单", tags=["payment"])
 def create_order(
     request: RechargeRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """创建充值订单"""
+    """创建充值订单
+    
+    **认证**: 需要 Bearer Token
+    
+    **请求体**:
+    - **package_id**: 套餐ID（可选，如填入则按套餐价格充值）
+    - **amount**: 充值金额（当package_id为空时使用）
+    - **payment_method**: 支付方式 - alipay/wechat/balance
+    
+    **返回**: 订单信息和支付链接/二维码
+    """
     
     # 获取套餐信息
     package = None
@@ -305,15 +315,19 @@ def create_order(
     )
 
 
-@router.post("/notify/alipay")
+@router.post("/notify/alipay", summary="支付宝异步回调", tags=["payment"])
 def alipay_notify(request: Request, db: Session = Depends(get_db)):
-    """支付宝异步回调
+    """支付宝支付异步回调
     
-    验签流程:
+    **注意**: 此接口由支付宝服务端调用，无需认证
+    
+    **验签流程**:
     1. 解析 POST body 中的表单数据
     2. 提取 sign 和 sign_type
     3. 使用支付宝公钥验签
     4. 验签通过后处理订单（幂等）
+    
+    **返回**: {"status": "success"} 或 {"status": "fail", "msg": "..."}
     """
     try:
         # 解析表单数据
@@ -388,15 +402,19 @@ def alipay_notify(request: Request, db: Session = Depends(get_db)):
     return {"status": "success"}
 
 
-@router.post("/notify/wechat")
+@router.post("/notify/wechat", summary="微信支付异步回调", tags=["payment"])
 def wechat_notify(request: Request, db: Session = Depends(get_db)):
     """微信支付异步回调
     
-    验签流程:
+    **注意**: 此接口由微信支付服务端调用，无需认证
+    
+    **验签流程**:
     1. 解析 XML body
     2. 提取 sign 字段
     3. 使用微信平台证书/商户API密钥验签
     4. 验签通过后处理订单（幂等）
+    
+    **返回**: XML格式的SUCCESS/FAIL响应
     """
     try:
         # 解析 XML body
@@ -479,13 +497,21 @@ def wechat_notify(request: Request, db: Session = Depends(get_db)):
     return wechat_reply(True)
 
 
-@router.get("/status/{order_no}")
+@router.get("/status/{order_no}", summary="查询订单状态", tags=["payment"])
 def get_order_status(
     order_no: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """查询订单状态"""
+    """查询订单状态
+    
+    **认证**: 需要 Bearer Token
+    
+    **路径参数**:
+    - **order_no**: 订单号
+    
+    **返回**: 订单状态、金额、支付时间
+    """
     order = db.query(Order).filter(
         Order.order_no == order_no,
         Order.user_id == current_user.id
@@ -505,7 +531,7 @@ def get_order_status(
     }
 
 
-@router.get("/list")
+@router.get("/list", summary="获取订单列表", tags=["payment"])
 def get_orders(
     page: int = 1,
     page_size: int = 20,
@@ -513,7 +539,17 @@ def get_orders(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """获取订单列表"""
+    """获取当前用户的订单列表
+    
+    **认证**: 需要 Bearer Token
+    
+    **查询参数**:
+    - **page**: 页码（默认1）
+    - **page_size**: 每页数量（默认20，最大100）
+    - **status**: 订单状态筛选（pending/paid/cancelled/refunded）
+    
+    **返回**: 订单分页列表
+    """
     query = db.query(Order).filter(Order.user_id == current_user.id)
     
     if status:
@@ -539,9 +575,12 @@ def get_orders(
 
 # ============ 套餐API ============
 
-@router.get("/packages", response_model=list[PackageResponse])
+@router.get("/packages", response_model=list[PackageResponse], summary="获取套餐列表", tags=["payment"])
 def get_packages(db: Session = Depends(get_db)):
-    """获取套餐列表"""
+    """获取所有可用套餐列表
+    
+    返回系统中所有激活状态的套餐，按sort_order排序
+    """
     packages = db.query(Package).filter(
         Package.is_active == True
     ).order_by(Package.sort_order).all()
@@ -549,12 +588,18 @@ def get_packages(db: Session = Depends(get_db)):
     return [PackageResponse.model_validate(p) for p in packages]
 
 
-@router.get("/packages/{package_id}", response_model=PackageResponse)
+@router.get("/packages/{package_id}", response_model=PackageResponse, summary="获取套餐详情", tags=["payment"])
 def get_package(
     package_id: int,
     db: Session = Depends(get_db)
 ):
-    """获取套餐详情"""
+    """获取单个套餐详情
+    
+    **路径参数**:
+    - **package_id**: 套餐ID
+    
+    **返回**: 套餐详细信息（ID、名称、价格、Token数量等）
+    """
     package = db.query(Package).filter(
         Package.id == package_id,
         Package.is_active == True

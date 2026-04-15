@@ -27,6 +27,7 @@ class GenerationTask(GenerationTaskBase, table=True):
     error: Optional[str] = None
     token_cost: float  # 本次任务的Token消耗
     execution_path: str = Field(default="")  # comfyui_wan21 | siliconflow_vidu | siliconflow_kling
+    image_url: Optional[str] = None  # 参考图片URL (图生视频)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
 
@@ -36,9 +37,11 @@ class GenerationTask(GenerationTaskBase, table=True):
 
 class GenerationTaskCreate(SQLModel):
     prompt: str
+    negative_prompt: Optional[str] = None  # 反向提示词
     duration: int = Field(ge=5, le=30)  # 5-30秒
-    quality_mode: str = Field(default="balanced")  # cost | balanced | quality
-    aspect_ratio: str = Field(default="16:9")  # 16:9 | 9:16 | 1:1
+    quality_mode: Literal["cost", "balanced", "quality"] = "balanced"  # 枚举校验
+    aspect_ratio: Literal["16:9", "9:16", "1:1"] = "16:9"  # 枚举校验
+    image_url: Optional[str] = None  # 参考图片URL (图生视频)
 
 
 class GenerationTaskResponse(SQLModel):

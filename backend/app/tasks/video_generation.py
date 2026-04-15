@@ -195,6 +195,7 @@ async def _generate_via_siliconflow(task: GenerationTask) -> str | None:
         prompt=task.prompt,
         duration=task.duration,
         aspect_ratio=task.aspect_ratio,
+        image_url=task.image_url,  # 图生视频支持
     )
 
     if not task_id:
