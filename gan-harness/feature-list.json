@@ -1,0 +1,78 @@
+{
+  "project": "漫AI",
+  "version": "0.1.0",
+  "created": "2026-04-15",
+  "features": [
+    {
+      "id": "F001",
+      "category": "core",
+      "description": "SiliconFlow API 真实接入 — 视频生成任务提交+状态轮询",
+      "steps": [
+        "POST /v1/generate 接受任务，返回 task_id",
+        "后台轮询 SiliconFlow 任务状态",
+        "GET /v1/generate/{task_id} 返回实时状态+视频URL"
+      ],
+      "passes": true,
+      "priority": "P0",
+      "sprint": "S1",
+      "gan_score": 9.05,
+      "gan_verdict": "PASS"
+    },
+    {
+      "id": "F002",
+      "category": "core",
+      "description": "ComfyUI Wan2.1 API 真实接入 — 本地GPU集群",
+      "steps": [
+        "ComfyUI 原生工作流格式提交",
+        "ngrok tunnel + API_KEY 认证",
+        "队列状态+进度推送"
+      ],
+      "passes": true,
+      "priority": "P0",
+      "sprint": "S1",
+      "gan_score": 9.05,
+      "gan_verdict": "PASS"
+    },
+    {
+      "id": "F003",
+      "category": "core",
+      "description": "/v1/generate/route/preview 端点 — 路由预览",
+      "steps": [
+        "GET /v1/generate/route/preview?mode=&duration=",
+        "返回推荐执行路径、预估时间、质量分、Token消耗"
+      ],
+      "passes": true,
+      "priority": "P0",
+      "sprint": "S1",
+      "gan_score": 9.05,
+      "gan_verdict": "PASS"
+    },
+    {
+      "id": "F004",
+      "category": "frontend",
+      "description": "前端 mode→quality_mode 映射修复",
+      "steps": [
+        "FormData 改为 JSON",
+        "mode 参数正确映射到后端 quality_mode"
+      ],
+      "passes": true,
+      "priority": "P0",
+      "sprint": "S1",
+      "gan_score": 9.05,
+      "gan_verdict": "PASS"
+    }
+  ],
+  "sprints": [
+    {
+      "id": "S1",
+      "features": ["F001", "F002", "F003", "F004"],
+      "contract": {
+        "deliverables": "4项修复全部完成，API端到端可调用",
+        "test_criteria": "POST /v1/generate 返回 task_id；GET /v1/generate/{id} 返回状态；/route/preview 返回路由信息"
+      },
+      "gan_score": 9.05,
+      "gan_verdict": "PASS",
+      "completed": true
+    }
+  ]
+}

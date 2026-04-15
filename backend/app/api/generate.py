@@ -80,6 +80,34 @@ async def create_generation_task(
     )
 
 
+@router.get("/route/preview")
+async def get_route_preview(
+    mode: str = "balanced",
+    duration: int = 5,
+):
+    """路由预览 - 显示将使用的模型和预估信息"""
+    execution_path, upstream_name = get_execution_path(mode, duration)
+    
+    # 预估时间(秒)
+    time_map = {"comfyui_wan21": 30, "siliconflow_vidu": 60, "siliconflow_kling": 90}
+    estimated_time = time_map.get(execution_path, 45)
+    
+    # 质量评分(1-10)
+    quality_map = {"comfyui_wan21": 7, "siliconflow_vidu": 8, "siliconflow_kling": 9}
+    quality_score = quality_map.get(execution_path, 7)
+    
+    # 成本
+    token_cost = calculate_cost_tokens(duration, mode)
+    
+    return {
+        "execution_path": execution_path,
+        "channel_name": upstream_name,
+        "estimated_time": estimated_time,
+        "quality_score": quality_score,
+        "token_cost": token_cost,
+    }
+
+
 @router.get("/{task_id}", response_model=GenerationTaskResponse)
 async def get_generation_task(
     task_id: str,

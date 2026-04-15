@@ -1,0 +1,20 @@
+2026-04-15 00:04 - Initializer: 项目初始化
+2026-04-15 01:04 - Coder: 4项修复完成
+  - SiliconFlow API 真实接入
+  - ComfyUI Wan2.1 API 真实接入
+  - /v1/generate/route/preview 端点
+  - 前端 mode→quality_mode 映射修复
+2026-04-15 01:10 - Reviewer: 烟雾测试完成（手动）
+  - Health endpoint: ✅
+  - Auth register/login: ✅
+  - Generate endpoint: ✅
+  - Frontend build: ✅ (10 routes, 0 errors)
+2026-04-15 01:20 - Reviewer子Agent: Phase 3 GAN评分完成
+  - Verdict: PASS (9.05/10)
+  - 7/7 Test Scenarios PASS
+  - Critical Issues: 0
+  - 报告: gan-harness/feedback/feedback-001.md
+2026-04-15 01:22 - Writer子Agent: Phase 6 知识沉淀完成
+  - 文档: docs/learnings/sprint1-video-api-gan-workflow.md (241行)
+  - planner, researcher, coder, reviewer, writer profiles 创建
+  - 各 profile SOUL.md 编写完成

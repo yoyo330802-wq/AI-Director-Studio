@@ -109,19 +109,15 @@ export default function StudioPage() {
   // 生成任务
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const formData = new FormData()
-      formData.append('mode', mode)
-      formData.append('prompt', prompt)
-      formData.append('negative_prompt', negativePrompt)
-      formData.append('duration', String(duration))
-      formData.append('aspect_ratio', aspectRatio)
-      
-      if (referenceImage) {
-        formData.append('image', referenceImage)
+      // mode 映射到后端 quality_mode 字段
+      const qualityModeMap: Record<ModeId, string> = {
+        fast: 'cost',
+        balanced: 'balanced',
+        premium: 'quality',
       }
-      
+
       return api.createTask({
-        mode,
+        mode: qualityModeMap[mode],
         prompt,
         negative_prompt: negativePrompt,
         duration,

@@ -12,7 +12,7 @@ class SiliconFlowClient:
 
     def __init__(self):
         self.api_key = settings.SILICONFLOW_API_KEY
-        self.timeout = 120.0
+        self.timeout = 180.0
 
     def _headers(self) -> Dict[str, str]:
         return {
@@ -33,16 +33,18 @@ class SiliconFlowClient:
             task_id 如果成功提交，否则 None
         """
         if not self.api_key:
+            print("[SiliconFlow] No API key configured")
             return None
 
-        # SiliconFlow 统一 endpoint: /vidu/video_generation
-        endpoint = f"{self.BASE_URL}/vidu/video_generation"
+        # SiliconFlow 统一 endpoint - 视频生成
+        endpoint = f"{self.BASE_URL}/video/submit"
 
         payload = {
-            "model": "vidu",
+            "model": model,  # "vidu" or "kling"
             "prompt": prompt,
             "duration": duration,
             "aspect_ratio": aspect_ratio,
+            "with_text": True,
         }
 
         try:
@@ -54,9 +56,12 @@ class SiliconFlowClient:
                 )
                 resp.raise_for_status()
                 result = resp.json()
-                return result.get("task_id")
+                # SiliconFlow 返回格式: {"task_id": "xxx", ...}
+                task_id = result.get("task_id") or result.get("id")
+                print(f"[SiliconFlow] Task submitted: {task_id}")
+                return task_id
         except httpx.HTTPStatusError as e:
-            print(f"[SiliconFlow] HTTP error: {e.response.status_code} {e.response.text}")
+            print(f"[SiliconFlow] HTTP error: {e.response.status_code} {e.response.text[:200]}")
             return None
         except Exception as e:
             print(f"[SiliconFlow] Error: {e}")
@@ -71,7 +76,7 @@ class SiliconFlowClient:
         if not self.api_key:
             return {"status": "failed", "video_url": None, "progress": 0, "error": "No API key"}
 
-        endpoint = f"{self.BASE_URL}/vidu/video_generation/{task_id}"
+        endpoint = f"{self.BASE_URL}/video/submit/{task_id}"
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
@@ -80,7 +85,7 @@ class SiliconFlowClient:
                 result = resp.json()
 
                 status = result.get("status", "unknown")
-                video_url = result.get("video_url") or result.get("url")
+                video_url = result.get("video_url") or result.get("output", {}).get("video") or result.get("url")
 
                 # SiliconFlow 进度映射
                 progress = 0
@@ -107,7 +112,7 @@ class SiliconFlowClient:
             return False
 
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.get(
                     f"{self.BASE_URL}/balance",
                     headers=self._headers(),

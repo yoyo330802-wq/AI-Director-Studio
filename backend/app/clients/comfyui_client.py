@@ -1,9 +1,9 @@
 # ComfyUI / Wan2.1 客户端
-# 对接 Wan2.1 Colab FastAPI 服务器 (端口 8188)
+# 对接 Wan2.1 Colab ComfyUI 服务器 (端口 8188)
 
 import httpx
 import asyncio
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from app.config import settings
 
 
@@ -11,17 +11,14 @@ class ComfyUIClient:
     """
     Wan2.1 ComfyUI API 客户端
 
-    对接格式: Wan2.1 FastAPI 服务器
+    对接格式: ComfyUI API (ngrok 暴露的 Colab 服务器)
     - GET  /system_stats        - 系统状态
-    - POST /v1/generate/{model} - 文本生视频
-    - POST /v1/generate/i2v     - 图片生视频
+    - POST /api/prompt          - 提交工作流
+    - GET  /history/{prompt_id} - 获取执行结果
     """
 
-    # 默认 Wan2.1 模型端点
-    DEFAULT_BASE_URL = "http://localhost:8188"
-
     def __init__(self):
-        self.base_url: str = settings.WAN21_COMFYUI_URL or self.DEFAULT_BASE_URL
+        self.base_url: str = settings.WAN21_COMFYUI_URL or "http://localhost:8188"
         self.api_key: str = settings.WAN21_COMFYUI_API_KEY or ""
         self.timeout = 300.0
 
@@ -39,6 +36,7 @@ class ComfyUIClient:
                 resp.raise_for_status()
                 return resp.json()
         except Exception as e:
+            print(f"[ComfyUI] system_stats error: {e}")
             return {"error": str(e), "status": "unavailable"}
 
     async def is_available(self) -> bool:
@@ -47,21 +45,22 @@ class ComfyUIClient:
         return "error" not in stats
 
     async def queue_prompt(self, prompt: Dict[str, Any]) -> Optional[str]:
-        """
-        提交工作流到 ComfyUI 队列
-
-        注意: Wan2.1 FastAPI 使用 /v1/generate/text2video 端点
-        此方法仅用于兼容 ComfyUI 原始 API 格式
-        """
+        """提交工作流到 ComfyUI 队列"""
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 resp = await client.post(
                     f"{self.base_url}/api/prompt",
                     json={"prompt": prompt},
+                    headers=self._headers(),
                 )
                 resp.raise_for_status()
                 data = resp.json()
-                return data.get("prompt_id")
+                prompt_id = data.get("prompt_id")
+                print(f"[ComfyUI] Prompt queued: {prompt_id}")
+                return prompt_id
+        except httpx.HTTPStatusError as e:
+            print(f"[ComfyUI] queue_prompt HTTP error: {e.response.status_code} {e.response.text[:200]}")
+            return None
         except Exception as e:
             print(f"[ComfyUI] queue_prompt error: {e}")
             return None
@@ -73,129 +72,149 @@ class ComfyUIClient:
                 resp = await client.get(f"{self.base_url}/history/{prompt_id}")
                 resp.raise_for_status()
                 return resp.json()
-        except Exception:
+        except Exception as e:
+            print(f"[ComfyUI] get_history error: {e}")
             return {}
+
+    async def get_queue(self) -> Dict[str, Any]:
+        """获取队列状态"""
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(f"{self.base_url}/queue")
+                resp.raise_for_status()
+                return resp.json()
+        except Exception:
+            return {"queue_running": [], "queue_pending": []}
+
+    def build_wan21_workflow(
+        self,
+        prompt: str,
+        duration: int = 5,
+        aspect_ratio: str = "16:9",
+        negative_prompt: str = "低质量, 模糊, 变形, 文字, 水印, 错误",
+        resolution: str = "720p",
+        seed: int = -1,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        构建 Wan2.1 ComfyUI 工作流 JSON
+
+        使用正确的 ComfyUI Wan2.1 节点结构
+        """
+        # 分辨率映射
+        size_map = {
+            "480p": {"16:9": "848x480", "9:16": "480x848", "1:1": "480x480"},
+            "720p": {"16:9": "1280x720", "9:16": "720x1280", "1:1": "720x720"},
+            "1080p": {"16:9": "1920x1080", "9:16": "1080x1920", "1:1": "1080x1080"},
+        }
+        size = size_map.get(resolution, size_map["720p"]).get(aspect_ratio, "1280x720")
+
+        # Wan2.1 T2V 工作流 - 使用正确的 ComfyUI 节点类型
+        return {
+            "3": {
+                "class_type": "CheckpointLoader",
+                "inputs": {
+                    "ckpt_name": "Wan2.1_T2V_1.3B_bf16.safetensors"
+                }
+            },
+            "4": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {
+                    "text": prompt,
+                    "clip": ["3", 0]
+                }
+            },
+            "5": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {
+                    "text": negative_prompt,
+                    "clip": ["3", 1]
+                }
+            },
+            "6": {
+                "class_type": "WanVideo",
+                "inputs": {
+                    "model": ["3", 0],
+                    "prompt": ["4", 0],
+                    "negative_prompt": ["5", 0],
+                    "video_length": duration * 16,  # 16fps
+                    "size": size,
+                    "seed": seed if seed > 0 else -1,
+                    "guidance_scale": kwargs.get("guidance_scale", 7.5),
+                    "num_inference_steps": kwargs.get("steps", 50),
+                }
+            },
+            "7": {
+                "class_type": "SaveVideo",
+                "inputs": {
+                    "video": ["6", 0],
+                    "filename_prefix": "manai_wan21"
+                }
+            }
+        }
 
     async def generate_video(
         self,
         prompt: str,
         duration: int = 5,
         aspect_ratio: str = "16:9",
-        model_size: str = "1.3b",
         **kwargs
     ) -> Dict[str, Any]:
         """
-        Wan2.1 文本生视频
+        Wan2.1 文本生视频 via ComfyUI
 
-        直接调用 Wan2.1 FastAPI 端点
+        1. 构建工作流
+        2. 提交到队列
+        3. 轮询直到完成
+        4. 返回视频路径
         """
-        resolution = kwargs.get("resolution", "720p")
+        # 构建工作流
+        workflow = self.build_wan21_workflow(
+            prompt=prompt,
+            duration=duration,
+            aspect_ratio=aspect_ratio,
+            negative_prompt=kwargs.get("negative_prompt", "低质量, 模糊, 变形, 文字, 水印"),
+            resolution=kwargs.get("resolution", "720p"),
+            seed=kwargs.get("seed", -1),
+            guidance_scale=kwargs.get("guidance_scale", 7.5),
+            steps=kwargs.get("steps", 50),
+        )
 
-        # 格式化尺寸
-        size_map = {
-            "480p": "848x480",
-            "720p": "1280x720",
-            "1080p": "1920x1080"
-        }
-        if aspect_ratio == "9:16":
-            size_map = {
-                "480p": "480x848",
-                "720p": "720x1280",
-                "1080p": "1080x1920"
-            }
-        elif aspect_ratio == "1:1":
-            size_map = {
-                "480p": "480x480",
-                "720p": "720x720",
-                "1080p": "1080x1080"
-            }
+        # 提交到队列
+        prompt_id = await self.queue_prompt(workflow)
+        if not prompt_id:
+            return {"error": "Failed to queue prompt"}
 
-        size = size_map.get(resolution, "1280x720")
+        # 轮询等待完成
+        max_wait = 60  # 最多等60次 × 5秒 = 300秒
+        for i in range(max_wait):
+            await asyncio.sleep(5)
 
-        payload = {
-            "prompt": prompt,
-            "negative_prompt": kwargs.get("negative_prompt", "低质量, 模糊, 变形, 文字, 水印"),
-            "size": size,
-            "frame_num": duration * 16,  # 16fps
-            "seed": kwargs.get("seed", -1),
-            "guidance_scale": kwargs.get("guidance_scale", 7.5),
-            "num_inference_steps": kwargs.get("steps", 50),
-        }
+            history = await self.get_history(prompt_id)
+            if prompt_id in history:
+                outputs = history[prompt_id].get("outputs", {})
 
-        try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                resp = await client.post(
-                    f"{self.base_url}/v1/generate/{model_size}",
-                    json=payload,
-                    headers=self._headers(),
-                )
-                resp.raise_for_status()
-                result = resp.json()
+                # 查找 SaveVideo 节点的输出
+                for node_id, node_output in outputs.items():
+                    if isinstance(node_output, dict) and "video_path" in node_output:
+                        video_path = node_output["video_path"]
+                        # 转换为 URL
+                        video_url = f"{self.base_url}/view?filename={video_path}"
+                        return {
+                            "prompt_id": prompt_id,
+                            "video_url": video_url,
+                            "node_id": node_id,
+                            "status": "completed",
+                        }
 
-                return {
-                    "task_id": result.get("task_id", result.get("id")),
-                    "video_url": result.get("video_url") or result.get("output", {}).get("video"),
-                    "duration": duration,
-                    "channel": f"wan21_{model_size}",
-                }
-        except httpx.HTTPStatusError as e:
-            return {"error": f"HTTP {e.response.status_code}: {e.response.text}"}
-        except Exception as e:
-            return {"error": str(e)}
+                # 如果有输出但还没保存视频，检查是否有错误
+                if outputs:
+                    print(f"[ComfyUI] Outputs: {outputs}")
 
-    def build_wan21_prompt(
-        self,
-        prompt: str,
-        duration: int = 5,
-        aspect_ratio: str = "16:9"
-    ) -> Dict[str, Any]:
-        """
-        构建 Wan2.1 ComfyUI 工作流 JSON
+            if i % 6 == 0:
+                print(f"[ComfyUI] Waiting for completion... ({i*5}s)")
 
-        用于 ComfyUI 原始 API (/api/prompt) 提交
-        节点 ID 需要从 ComfyUI node_types 表获取，这里使用标准 Wan2.1 节点结构
-        """
-        # ComfyUI 节点结构 - 标准 Wan2.1 T2V 工作流
-        # 节点 ID 为任意唯一值，只要不循环引用即可
-        return {
-            "1": {
-                "class_type": "CheckpointLoaderSimple",
-                "inputs": {
-                    "ckpt_name": "Wan2.1_T2V_1.3B_bf16.safetensors"
-                }
-            },
-            "2": {
-                "class_type": "CLIPTextEncode",
-                "inputs": {
-                    "text": prompt,
-                    "clip": ["1", 0]
-                }
-            },
-            "3": {
-                "class_type": "CLIPTextEncode",
-                "inputs": {
-                    "text": "低质量, 模糊, 变形, 文字, 水印",
-                    "clip": ["1", 1]
-                }
-            },
-            "4": {
-                "class_type": "Wan21Video",
-                "inputs": {
-                    "model": ["1", 0],
-                    "prompt": ["2", 0],
-                    "negative_prompt": ["3", 0],
-                    "duration": duration,
-                    "aspect_ratio": aspect_ratio,
-                }
-            },
-            "5": {
-                "class_type": "VAEDecode",
-                "inputs": {
-                    "samples": ["4", 0],
-                    "vae": ["1", 2]
-                }
-            }
-        }
+        return {"error": "Timeout waiting for video generation", "prompt_id": prompt_id}
 
 
 # 全局单例
