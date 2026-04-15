@@ -1,0 +1,121 @@
+name: GAN Auto-Runner
+
+on:
+  # PRD 或 GAN 配置变更时自动触发
+  push:
+    paths:
+      - 'PRD_v*.md'
+      - 'gan-harness/**'
+      - 'gan-auto-runner/**'
+      - 'run_gan.sh'
+  # PR 打开或更新时触发
+  pull_request:
+    types: [opened, synchronize, reopened]
+  # 手动触发
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '执行模式'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - manual
+      sprint:
+        description: 'Sprint 名称'
+        required: false
+        default: 'S1'
+        type: string
+      resume_from:
+        description: '从 Phase 开始 (留空从头)'
+        required: false
+        default: ''
+        type: string
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  gan-workflow:
+    name: GAN Phase 0-8 自动化
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 安装依赖
+        run: |
+          pip install pyyaml requests
+
+      - name: 显示当前状态
+        run: |
+          echo "=== Git 状态 ==="
+          git log --oneline -5
+          echo ""
+          echo "=== 变更文件 ==="
+          git diff --name-only HEAD~3..HEAD || true
+          echo ""
+          echo "=== 工作空间 ==="
+          ls -la
+
+      - name: 运行 GAN Auto-Runner
+        id: gan
+        run: |
+          SPRINT="${{ inputs.sprint || 'S1' }}"
+          MODE="${{ inputs.mode || 'auto' }}"
+          RESUME=""
+          if [ -n "${{ inputs.resume_from }}" ]; then
+            RESUME="--resume-from ${{ inputs.resume_from }}"
+          fi
+
+          echo "执行: ./run_gan.sh --workspace . --mode $MODE --sprint $SPRINT $RESUME"
+          ./run_gan.sh --workspace . --mode "$MODE" --sprint "$SPRINT" $RESUME
+
+      - name: 上传 GAN 报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gan-reports-${{ github.run_number }}
+          path: |
+            gan-auto-runner/reports/
+            gan-harness/feedback/
+            gan-harness/sprint-plan/
+          retention-days: 30
+
+      - name: 生成执行摘要
+        if: always()
+        run: |
+          echo "## GAN 执行摘要" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 项目 | 值 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| 触发方式 | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 执行模式 | ${{ inputs.mode || 'auto' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Sprint | ${{ inputs.sprint || 'S1' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 状态 | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 运行编号 | #${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: 飞书通知（可选）
+        if: always()
+        run: |
+          # 如果配置了 FEISHU_WEBHOOK 则发送通知
+          if [ -n "${{ secrets.FEISHU_WEBHOOK }}" ]; then
+            STATUS="${{ job.status }}"
+            EMOJI="✅"
+            if [ "$STATUS" != "success" ]; then
+              EMOJI="❌"
+            fi
+            curl -X POST "${{ secrets.FEISHU_WEBHOOK }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"msg_type\":\"text\",\"content\":{\"text\":\"$EMOJI GAN Workflow $STATUS\n仓库: ${{ github.repository }}\nSprint: ${{ inputs.sprint || 'S1' }}\n运行: #${{ github.run_number }}\n链接: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}}"
+          fi

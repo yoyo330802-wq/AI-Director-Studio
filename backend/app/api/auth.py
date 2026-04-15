@@ -12,9 +12,16 @@ from app.services.billing import DEFAULT_INITIAL_TOKENS
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED, summary="用户注册", tags=["auth"])
 async def register(user_data: UserCreate, session: AsyncSession = Depends(get_session)):
-    """用户注册"""
+    """注册新用户
+    
+    - **email**: 邮箱地址（唯一）
+    - **name**: 用户名
+    - **password**: 密码（最小6位）
+    
+    返回用户信息和初始Token余额（100 tokens）
+    """
     # 检查邮箱是否已存在
     result = await session.execute(select(User).where(User.email == user_data.email))
     existing = result.scalar_one_or_none()
@@ -38,9 +45,15 @@ async def register(user_data: UserCreate, session: AsyncSession = Depends(get_se
     return user
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse, summary="用户登录", tags=["auth"])
 async def login(user_data: UserLogin, session: AsyncSession = Depends(get_session)):
-    """用户登录"""
+    """用户登录验证
+    
+    - **email**: 邮箱地址
+    - **password**: 密码
+    
+    验证成功返回JWT access_token，有效期7天
+    """
     result = await session.execute(select(User).where(User.email == user_data.email))
     user = result.scalar_one_or_none()
     

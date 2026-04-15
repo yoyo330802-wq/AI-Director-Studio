@@ -1,0 +1,30 @@
+gan_runner:
+  # 工作空间（可被命令行覆盖）
+  workspace: /home/wj/workspace/manai
+
+  # 决策模式: auto = 全自动, manual = 关键点暂停
+  decisions_mode: auto
+
+  # 评分阈值
+  scoring:
+    pass_threshold: 6.0
+    warn_threshold: 7.5
+    max_fix_loops: 3
+
+  # 各 Phase 配置
+  phases:
+    phase_0:
+      auto_approve_if_no_issues: true
+    phase_3:
+      parallel: true
+      subagent_model: MiniMax-M2.7
+      max_iterations: 60
+    phase_8:
+      auto_push: true
+      branch: master
+
+  # 通知
+  notifications:
+    on_failure: true
+    on_completion: true
+    webhook_url: ""
