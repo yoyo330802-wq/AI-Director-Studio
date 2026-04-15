@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     )
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     
+    # Redis缓存配置 (Sprint 5: S5-F1)
+    REDIS_CACHE_ENABLED: bool = os.getenv("REDIS_CACHE_ENABLED", "true").lower() == "true"
+    REDIS_CACHE_TTL_DEFAULT: int = int(os.getenv("REDIS_CACHE_TTL_DEFAULT", "300"))  # 5分钟
+    REDIS_CACHE_TTL_SHORT: int = int(os.getenv("REDIS_CACHE_TTL_SHORT", "60"))       # 1分钟
+    REDIS_CACHE_TTL_LONG: int = int(os.getenv("REDIS_CACHE_TTL_LONG", "3600"))      # 1小时
+    
     # 安全
     SECRET_KEY: str = os.getenv(
         "SECRET_KEY", 
@@ -58,11 +64,43 @@ class Settings(BaseSettings):
         "kling": 0.070,
     }
     
+    # OSS/CDN 配置 (Sprint 4: S4-F1)
+    OSS_ACCESS_KEY_ID: str = os.getenv("OSS_ACCESS_KEY_ID", "")
+    OSS_SECRET_ACCESS_KEY: str = os.getenv("OSS_SECRET_ACCESS_KEY", "")
+    OSS_ENDPOINT: str = os.getenv("OSS_ENDPOINT", "")
+    OSS_REGION: str = os.getenv("OSS_REGION", "")
+    OSS_BUCKET: str = os.getenv("OSS_BUCKET", "manai-videos")
+    OSS_CDN_DOMAIN: str = os.getenv("OSS_CDN_DOMAIN", "")
+    LOCAL_UPLOAD_DIR: str = os.getenv("LOCAL_UPLOAD_DIR", "/tmp/manai-uploads")
+    
+    # 内容审核配置 (Sprint 4: S4-F2)
+    ALIYUN_ACCESS_KEY_ID: str = os.getenv("ALIYUN_ACCESS_KEY_ID", "")
+    ALIYUN_ACCESS_KEY_SECRET: str = os.getenv("ALIYUN_ACCESS_KEY_SECRET", "")
+    ALIYUN_REGION: str = os.getenv("ALIYUN_REGION", "cn-shanghai")
+    CONTENT_MODERATION_ENABLED: bool = os.getenv("CONTENT_MODERATION_ENABLED", "true").lower() == "true"
+    
+    # 限流配置 (Sprint 4: S4-F3) - Kong使用
+    RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "60"))
+    RATE_LIMIT_GENERATE_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_GENERATE_PER_MINUTE", "10"))
+    
+    # 监控和告警配置 (Sprint 4: S4-F4)
+    LOG_FILE: str = os.getenv("LOG_FILE", "logs/manai.log")
+    ALERT_WEBHOOK_URL: str = os.getenv("ALERT_WEBHOOK_URL", "")
+    ALERT_ENABLED: bool = os.getenv("ALERT_ENABLED", "true").lower() == "true"
+    
+    # SEO 配置 (Sprint 4: S4-F5)
+    SEO_SITEMAP_URL: str = os.getenv("SEO_SITEMAP_URL", "https://manai.com/sitemap.xml")
+    SEO_ROBOTS_TXT_URL: str = os.getenv("SEO_ROBOTS_TXT_URL", "https://manai.com/robots.txt")
+
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000", 
+        "http://127.0.0.1:3000",
+        "https://manai.com",
+    ]
 
     # 调试模式
-    DEBUG: bool = False
+    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 
     class Config:
         extra = "ignore"  # 允许额外的环境变量

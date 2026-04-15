@@ -1,0 +1,29 @@
+# robots.txt
+# Sprint 4: S4-F5 SEO优化
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /studio/
+Disallow: /api/v1/*
+
+# Sitemap
+Sitemap: https://manai.com/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 10
+
+# 特定爬虫配置
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+
+User-agent: Baiduspider
+Allow: /
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api/

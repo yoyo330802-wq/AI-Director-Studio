@@ -17,6 +17,7 @@ from app.services.billing import (
     PRICING
 )
 from app.services.router import get_execution_path
+from app.services.content_moderation import content_moderation_service, ModerationLevel
 from app.tasks.video_generation import submit_generation_task
 
 router = APIRouter(prefix="/api/v1/generate", tags=["generate"])
@@ -29,7 +30,18 @@ async def create_generation_task(
     session: AsyncSession = Depends(get_session),
 ):
     """提交视频生成任务"""
-    # 1. 检查余额
+    # 1. 内容审核 (Sprint 4: S4-F2)
+    moderation_result = content_moderation_service.check_prompt(
+        task_data.prompt,
+        task_data.negative_prompt
+    )
+    if moderation_result.level == ModerationLevel.BLOCK:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"内容审核未通过: {moderation_result.reason}"
+        )
+    
+    # 2. 检查余额
     is_valid, error_msg = validate_balance(
         current_user.token_balance,
         task_data.duration,
@@ -41,16 +53,16 @@ async def create_generation_task(
             detail=error_msg
         )
     
-    # 2. 确定执行路径
+    # 3. 确定执行路径
     execution_path, upstream_name = get_execution_path(
         task_data.quality_mode,
         task_data.duration
     )
     
-    # 3. 计算Token消耗
+    # 4. 计算Token消耗
     token_cost = calculate_cost_tokens(task_data.duration, task_data.quality_mode)
     
-    # 4. 创建任务
+    # 5. 创建任务
     task = GenerationTask(
         id=str(uuid.uuid4()),
         user_id=current_user.id,
@@ -67,10 +79,10 @@ async def create_generation_task(
     await session.commit()
     await session.refresh(task)
     
-    # 5. 提交到Celery (异步执行)
+    # 6. 提交到Celery (异步执行)
     submit_generation_task(task.id)
     
-    # 6. 返回预估时间
+    # 7. 返回预估时间
     estimated_time = get_estimated_time(task_data.quality_mode)
     
     return GenerationTaskSubmit(
@@ -137,3 +149,36 @@ async def get_generation_task(
         error=task.error,
         estimated_time=get_estimated_time(task.quality_mode)
     )
+
+
+@router.delete("/{task_id}")
+async def cancel_generation_task(
+    task_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """取消任务 - 仅当状态为 queued/pending 时可取消"""
+    result = await session.execute(
+        select(GenerationTask).where(
+            GenerationTask.id == task_id,
+            GenerationTask.user_id == current_user.id
+        )
+    )
+    task = result.scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found"
+        )
+
+    if task.status not in ["queued", "pending"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot cancel task with status '{task.status}'. Only queued or pending tasks can be cancelled."
+        )
+
+    task.status = "cancelled"
+    await session.commit()
+
+    return {"message": "Task cancelled", "task_id": task_id}

@@ -1,0 +1,120 @@
+# Kong Gateway Configuration
+# 漫AI - API Gateway
+# Sprint 4: S4-F3 Kong限流
+
+_format_version: "3.0"
+
+services:
+  # 视频生成服务
+  - name: manai-generate
+    url: http://backend:8000/api/v1/generate
+    routes:
+      - name: generate-route
+        paths:
+          - /api/v1/generate
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 10
+          policy: local
+          fault_tolerant: true
+          hide_client_headers: false
+          error_code: 429
+          error_message: "请求过于频繁，请稍后再试"
+
+  # 用户认证服务
+  - name: manai-auth
+    url: http://backend:8000/api/v1/auth
+    routes:
+      - name: auth-route
+        paths:
+          - /api/v1/auth
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 20
+          policy: local
+          fault_tolerant: true
+
+  # 其他API服务
+  - name: manai-api
+    url: http://backend:8000/api/v1
+    routes:
+      - name: api-route
+        paths:
+          - /api/v1
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 60
+          policy: local
+          fault_tolerant: true
+
+  # 前端公开页面
+  - name: manai-frontend
+    url: http://frontend:3000
+    routes:
+      - name: frontend-route
+        paths:
+          - /
+        strip_path: false
+
+# 全局插件
+plugins:
+  # CORS
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      headers:
+        - Authorization
+        - Content-Type
+        - X-Requested-With
+      credentials: true
+      max_age: 3600
+      exposed_headers:
+        - X-RateLimit-Limit-Minute
+        - X-RateLimit-Remaining-Minute
+
+  # 请求大小限制
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 10
+      size_unit: megabytes
+
+  # 响应压缩
+  - name: gzip
+    config:
+      mime_types:
+        - application/json
+        - text/html
+        - text/css
+        - application/javascript
+        - image/svg+xml
+
+  # Bot 检测
+  - name: bot-detection
+    config:
+      allow:
+        - curl
+        - Chrome
+        - Firefox
+        - Safari
+      deny:
+        - malicious-bot
+
+  # IP 白名单/黑名单 (可选)
+  # - name: ip-restriction
+  #   config:
+  #     allow:
+  #       - 10.0.0.0/8
+  #     deny: []

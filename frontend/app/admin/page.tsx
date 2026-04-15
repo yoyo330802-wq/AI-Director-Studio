@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { 
   Users, Video, CreditCard, Settings, BarChart3, 
   TrendingUp, TrendingDown, DollarSign, Activity,
   Shield, Server, AlertTriangle, CheckCircle, XCircle,
   RefreshCw, Search, Filter, MoreVertical, Edit, Trash2,
-  Eye, Pause, Play, Download
+  Eye, Pause, Play, Download, X, ChevronDown, Check,
+  Clock, Flag, Ban, Zap, ExternalLink, Copy, Image
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
@@ -20,8 +21,8 @@ const NAV_ITEMS = [
   { id: 'users', name: '用户管理', icon: Users },
   { id: 'videos', name: '作品管理', icon: Video },
   { id: 'orders', name: '订单管理', icon: CreditCard },
-  { id: 'channels', name: '渠道管理', icon: Server },
-  { id: 'system', name: '系统设置', icon: Settings },
+  { id: 'tasks', name: '任务管理', icon: Zap },
+  { id: 'review', name: '内容审核', icon: Shield },
 ]
 
 // 统计卡片数据
@@ -34,6 +35,80 @@ interface Stats {
   today_videos: number
   today_orders: number
   today_revenue: number
+  pending_review_count: number
+}
+
+interface User {
+  id: number
+  username: string
+  email: string
+  nickname: string | null
+  avatar: string | null
+  level: string
+  balance: number
+  is_vip: boolean
+  is_active: boolean
+  video_count: number
+  order_count: number
+  total_consumption: number
+  created_at: string
+  last_login_at: string
+}
+
+interface VideoItem {
+  id: number
+  title: string
+  description: string
+  video_url: string
+  cover_url: string
+  status: 'processing' | 'completed' | 'failed'
+  review_status: 'pending' | 'approved' | 'rejected'
+  view_count: number
+  like_count: number
+  user: { id: number; username: string; nickname: string }
+  created_at: string
+  tags: string[]
+}
+
+interface Order {
+  id: number
+  order_no: string
+  user: { id: number; username: string }
+  type: string
+  amount: number
+  actual_amount: number
+  status: 'pending' | 'paid' | 'cancelled' | 'refunded'
+  payment_method: string | null
+  created_at: string
+  paid_at: string | null
+}
+
+interface Task {
+  task_id: string
+  task_no: string
+  user: { id: number; username: string }
+  mode: string
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
+  progress: number
+  prompt: string
+  video_url: string | null
+  cover_url: string | null
+  error_message: string | null
+  created_at: string
+  started_at: string | null
+  completed_at: string | null
+}
+
+interface ReviewItem {
+  id: number
+  video_id: number
+  title: string
+  cover_url: string
+  video_url: string
+  user: { id: number; username: string; nickname: string }
+  reason: string
+  flagged_at: string
+  status: 'pending' | 'approved' | 'rejected'
 }
 
 export default function AdminPage() {
@@ -65,7 +140,7 @@ export default function AdminPage() {
               key={item.id}
               onClick={() => setActiveNav(item.id)}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors",
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors relative",
                 activeNav === item.id
                   ? "bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400"
                   : "text-gray-400 hover:text-white hover:bg-white/5"
@@ -73,6 +148,11 @@ export default function AdminPage() {
             >
               <item.icon className="w-5 h-5" />
               {item.name}
+              {item.id === 'review' && stats?.pending_review_count ? (
+                <span className="absolute right-3 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center">
+                  {stats.pending_review_count > 9 ? '9+' : stats.pending_review_count}
+                </span>
+              ) : null}
             </button>
           ))}
         </nav>
@@ -115,7 +195,9 @@ export default function AdminPage() {
             {/* 通知 */}
             <button className="relative p-2 rounded-lg hover:bg-white/5">
               <AlertTriangle className="w-5 h-5 text-gray-400" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+              {stats?.pending_review_count ? (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+              ) : null}
             </button>
 
             {/* 头像 */}
@@ -131,8 +213,8 @@ export default function AdminPage() {
           {activeNav === 'users' && <UsersContent searchQuery={searchQuery} />}
           {activeNav === 'videos' && <VideosContent searchQuery={searchQuery} />}
           {activeNav === 'orders' && <OrdersContent searchQuery={searchQuery} />}
-          {activeNav === 'channels' && <ChannelsContent />}
-          {activeNav === 'system' && <SystemContent />}
+          {activeNav === 'tasks' && <TasksContent searchQuery={searchQuery} />}
+          {activeNav === 'review' && <ReviewContent />}
         </div>
       </main>
     </div>
@@ -213,6 +295,26 @@ function DashboardContent({ stats }: { stats?: Stats }) {
         ))}
       </div>
 
+      {/* 今日概览 */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-[#16161d] rounded-2xl p-4 border border-white/5">
+          <div className="text-sm text-gray-400 mb-1">今日新增用户</div>
+          <div className="text-xl font-bold text-green-400">+{stats?.today_users || 0}</div>
+        </div>
+        <div className="bg-[#16161d] rounded-2xl p-4 border border-white/5">
+          <div className="text-sm text-gray-400 mb-1">今日作品</div>
+          <div className="text-xl font-bold text-cyan-400">+{stats?.today_videos || 0}</div>
+        </div>
+        <div className="bg-[#16161d] rounded-2xl p-4 border border-white/5">
+          <div className="text-sm text-gray-400 mb-1">今日订单</div>
+          <div className="text-xl font-bold text-amber-400">+{stats?.today_orders || 0}</div>
+        </div>
+        <div className="bg-[#16161d] rounded-2xl p-4 border border-white/5">
+          <div className="text-sm text-gray-400 mb-1">今日收入</div>
+          <div className="text-xl font-bold text-purple-400">¥{stats?.today_revenue || 0}</div>
+        </div>
+      </div>
+
       {/* 图表区域 */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-[#16161d] rounded-2xl p-6 border border-white/5">
@@ -232,48 +334,97 @@ function DashboardContent({ stats }: { stats?: Stats }) {
         </div>
       </div>
 
-      {/* 最近订单 */}
-      <div className="bg-[#16161d] rounded-2xl p-6 border border-white/5">
-        <h3 className="text-lg font-semibold mb-4">最近订单</h3>
-        <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                </div>
-                <div>
-                  <div className="font-medium">订单 #{1000 + i}</div>
-                  <div className="text-sm text-gray-400">用户 {i} · 创作者月卡</div>
-                </div>
+      {/* 待审核 */}
+      {stats?.pending_review_count ? (
+        <div className="bg-[#16161d] rounded-2xl p-6 border border-white/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-red-400" />
               </div>
-              <div className="text-right">
-                <div className="font-medium text-green-400">¥399</div>
-                <div className="text-sm text-gray-400">刚刚</div>
+              <div>
+                <div className="font-medium">待审核内容</div>
+                <div className="text-sm text-gray-400">有 {stats.pending_review_count} 个作品待审核</div>
               </div>
             </div>
-          ))}
+            <button className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors">
+              立即处理
+            </button>
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   )
 }
 
 // 用户管理
 function UsersContent({ searchQuery }: { searchQuery: string }) {
+  const queryClient = useQueryClient()
+  const [page, setPage] = useState(1)
+  const [levelFilter, setLevelFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-users', page, levelFilter, statusFilter, searchQuery],
+    queryFn: () => api.get('/v1/admin/users', {
+      params: {
+        page,
+        page_size: 20,
+        level: levelFilter !== 'all' ? levelFilter : undefined,
+        is_active: statusFilter !== 'all' ? statusFilter === 'active' : undefined,
+        search: searchQuery || undefined,
+      }
+    }),
+  })
+
+  const users: User[] = data?.items || []
+  const totalPages = data?.total_pages || 1
+
+  // 禁用/启用用户
+  const toggleUserStatus = useMutation({
+    mutationFn: ({ userId, isActive }: { userId: number; isActive: boolean }) =>
+      api.post(`/v1/admin/users/${userId}/${isActive ? 'enable' : 'disable'}`),
+    onSuccess: () => {
+      toast.success('操作成功')
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+    },
+    onError: () => toast.error('操作失败'),
+  })
+
   return (
     <div className="space-y-4">
       {/* 工具栏 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg">
-            <Users className="w-4 h-4" />
+            <Download className="w-4 h-4" />
             导出
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg">
+          <button 
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-users'] })}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+          >
             <RefreshCw className="w-4 h-4" />
             刷新
           </button>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {['all', 'L1_BASIC', 'L2_CREATOR', 'L3_STUDIO', 'L4_ENTERPRISE'].map((level) => (
+            <button
+              key={level}
+              onClick={() => setLevelFilter(level)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-sm transition-colors",
+                levelFilter === level ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"
+              )}
+            >
+              {level === 'all' ? '全部等级' :
+               level === 'L1_BASIC' ? '体验版' :
+               level === 'L2_CREATOR' ? '创作者' :
+               level === 'L3_STUDIO' ? '工作室' : '企业版'}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -286,164 +437,913 @@ function UsersContent({ searchQuery }: { searchQuery: string }) {
               <th className="text-left p-4 text-sm font-medium text-gray-400">等级</th>
               <th className="text-left p-4 text-sm font-medium text-gray-400">余额</th>
               <th className="text-left p-4 text-sm font-medium text-gray-400">消费</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">作品</th>
               <th className="text-left p-4 text-sm font-medium text-gray-400">注册时间</th>
               <th className="text-left p-4 text-sm font-medium text-gray-400">状态</th>
               <th className="text-left p-4 text-sm font-medium text-gray-400">操作</th>
             </tr>
           </thead>
           <tbody>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <tr key={i} className="border-b border-white/5 hover:bg-white/5">
-                <td className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center">
-                      用
-                    </div>
-                    <div>
-                      <div className="font-medium">用户 {i}</div>
-                      <div className="text-sm text-gray-400">user{i}@example.com</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="p-4">
-                  <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded text-sm">
-                    创作者
-                  </span>
-                </td>
-                <td className="p-4">¥1,234</td>
-                <td className="p-4">¥5,678</td>
-                <td className="p-4 text-gray-400">2026-01-15</td>
-                <td className="p-4">
-                  <span className="flex items-center gap-1 text-green-400">
-                    <CheckCircle className="w-4 h-4" />
-                    正常
-                  </span>
-                </td>
-                <td className="p-4">
-                  <div className="flex items-center gap-2">
-                    <button className="p-2 hover:bg-white/10 rounded-lg">
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 hover:bg-white/10 rounded-lg">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+            {isLoading ? (
+              [...Array(5)].map((_, i) => (
+                <tr key={i} className="border-b border-white/5">
+                  <td className="p-4"><div className="h-10 bg-white/5 rounded w-32 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-20 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-20 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-12 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-24 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-8 bg-white/5 rounded w-24 animate-pulse" /></td>
+                </tr>
+              ))
+            ) : users.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="p-8 text-center text-gray-500">暂无用户</td>
               </tr>
-            ))}
+            ) : (
+              users.map((user) => (
+                <tr key={user.id} className="border-b border-white/5 hover:bg-white/5">
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center">
+                        {user.nickname?.[0] || user.username[0]}
+                      </div>
+                      <div>
+                        <div className="font-medium">{user.nickname || user.username}</div>
+                        <div className="text-sm text-gray-400">{user.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <span className={cn(
+                      "px-2 py-1 rounded text-sm",
+                      user.level === 'L4_ENTERPRISE' ? 'bg-amber-500/20 text-amber-400' :
+                      user.level === 'L3_STUDIO' ? 'bg-purple-500/20 text-purple-400' :
+                      user.level === 'L2_CREATOR' ? 'bg-blue-500/20 text-blue-400' :
+                      'bg-gray-500/20 text-gray-400'
+                    )}>
+                      {user.level === 'L4_ENTERPRISE' ? '企业版' :
+                       user.level === 'L3_STUDIO' ? '工作室' :
+                       user.level === 'L2_CREATOR' ? '创作者' : '体验版'}
+                    </span>
+                  </td>
+                  <td className="p-4">¥{user.balance.toFixed(2)}</td>
+                  <td className="p-4">¥{user.total_consumption.toFixed(2)}</td>
+                  <td className="p-4">{user.video_count}</td>
+                  <td className="p-4 text-gray-400">{new Date(user.created_at).toLocaleDateString()}</td>
+                  <td className="p-4">
+                    <span className={cn(
+                      "flex items-center gap-1 text-sm",
+                      user.is_active ? 'text-green-400' : 'text-red-400'
+                    )}>
+                      {user.is_active ? (
+                        <><CheckCircle className="w-4 h-4" /> 正常</>
+                      ) : (
+                        <><XCircle className="w-4 h-4" /> 禁用</>
+                      )}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-1">
+                      <button className="p-2 hover:bg-white/10 rounded-lg" title="查看">
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => toggleUserStatus.mutate({ userId: user.id, isActive: !user.is_active })}
+                        className={cn(
+                          "p-2 hover:bg-white/10 rounded-lg",
+                          user.is_active ? 'text-red-400' : 'text-green-400'
+                        )}
+                        title={user.is_active ? '禁用' : '启用'}
+                      >
+                        {user.is_active ? <Ban className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* 分页 */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 bg-white/5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+          >
+            上一页
+          </button>
+          <span className="text-sm text-gray-400">{page} / {totalPages}</span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-4 py-2 bg-white/5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+          >
+            下一页
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
 // 作品管理
 function VideosContent({ searchQuery }: { searchQuery: string }) {
+  const queryClient = useQueryClient()
+  const [page, setPage] = useState(1)
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-videos', page, statusFilter, searchQuery],
+    queryFn: () => api.get('/v1/admin/videos', {
+      params: {
+        page,
+        page_size: 20,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        search: searchQuery || undefined,
+      }
+    }),
+  })
+
+  const videos: VideoItem[] = data?.items || []
+  const totalPages = data?.total_pages || 1
+
   return (
     <div className="space-y-4">
-      <div className="bg-[#16161d] rounded-2xl border border-white/5 p-6">
-        <p className="text-gray-400">作品管理功能</p>
+      {/* 工具栏 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg">
+            <Download className="w-4 h-4" />
+            导出
+          </button>
+          <button 
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-videos'] })}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            刷新
+          </button>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {['all', 'completed', 'processing', 'failed'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-sm transition-colors",
+                statusFilter === status ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"
+              )}
+            >
+              {status === 'all' ? '全部' :
+               status === 'completed' ? '已完成' :
+               status === 'processing' ? '生成中' : '失败'}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* 作品列表 */}
+      <div className="bg-[#16161d] rounded-2xl border border-white/5 overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/5">
+              <th className="text-left p-4 text-sm font-medium text-gray-400">作品</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">作者</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">播放</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">点赞</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">状态</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">审核</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">时间</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              [...Array(5)].map((_, i) => (
+                <tr key={i} className="border-b border-white/5">
+                  <td className="p-4"><div className="h-12 bg-white/5 rounded w-32 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-20 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-12 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-20 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-8 bg-white/5 rounded w-20 animate-pulse" /></td>
+                </tr>
+              ))
+            ) : videos.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="p-8 text-center text-gray-500">暂无作品</td>
+              </tr>
+            ) : (
+              videos.map((video) => (
+                <tr key={video.id} className="border-b border-white/5 hover:bg-white/5">
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-16 h-10 rounded-lg bg-gray-800 overflow-hidden">
+                        {video.cover_url && (
+                          <img src={video.cover_url} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <span className="font-medium line-clamp-1">{video.title || '无标题'}</span>
+                    </div>
+                  </td>
+                  <td className="p-4 text-gray-400">
+                    {video.user.nickname || video.user.username}
+                  </td>
+                  <td className="p-4">{video.view_count}</td>
+                  <td className="p-4">{video.like_count}</td>
+                  <td className="p-4">
+                    <span className={cn(
+                      "px-2 py-1 rounded text-xs",
+                      video.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                      video.status === 'processing' ? 'bg-blue-500/20 text-blue-400' :
+                      'bg-red-500/20 text-red-400'
+                    )}>
+                      {video.status === 'completed' ? '已完成' :
+                       video.status === 'processing' ? '生成中' : '失败'}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className={cn(
+                      "px-2 py-1 rounded text-xs",
+                      video.review_status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                      video.review_status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
+                      'bg-red-500/20 text-red-400'
+                    )}>
+                      {video.review_status === 'approved' ? '已通过' :
+                       video.review_status === 'pending' ? '待审核' : '已拒绝'}
+                    </span>
+                  </td>
+                  <td className="p-4 text-gray-400">
+                    {new Date(video.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => setSelectedVideo(video)}
+                        className="p-2 hover:bg-white/10 rounded-lg" title="预览"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      {video.video_url && (
+                        <a href={video.video_url} target="_blank" className="p-2 hover:bg-white/10 rounded-lg" title="下载">
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 分页 */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 bg-white/5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+          >
+            上一页
+          </button>
+          <span className="text-sm text-gray-400">{page} / {totalPages}</span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-4 py-2 bg-white/5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+          >
+            下一页
+          </button>
+        </div>
+      )}
+
+      {/* 视频预览弹窗 */}
+      <AnimatePresence>
+        {selectedVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={() => setSelectedVideo(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#16161d] rounded-2xl max-w-3xl w-full overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="aspect-video bg-black">
+                {selectedVideo.video_url && (
+                  <video src={selectedVideo.video_url} controls className="w-full h-full" />
+                )}
+              </div>
+              <div className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold">{selectedVideo.title || '无标题'}</h3>
+                    <p className="text-sm text-gray-400">
+                      作者: {selectedVideo.user.nickname || selectedVideo.user.username}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedVideo(null)}
+                    className="p-2 bg-white/10 rounded-lg hover:bg-white/20"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
 // 订单管理
 function OrdersContent({ searchQuery }: { searchQuery: string }) {
+  const [page, setPage] = useState(1)
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-orders', page, statusFilter, searchQuery],
+    queryFn: () => api.get('/v1/admin/orders', {
+      params: {
+        page,
+        page_size: 20,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        search: searchQuery || undefined,
+      }
+    }),
+  })
+
+  const orders: Order[] = data?.items || []
+  const totalPages = data?.total_pages || 1
+
   return (
     <div className="space-y-4">
-      <div className="bg-[#16161d] rounded-2xl border border-white/5 p-6">
-        <p className="text-gray-400">订单管理功能</p>
+      {/* 工具栏 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg">
+            <Download className="w-4 h-4" />
+            导出
+          </button>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {['all', 'paid', 'pending', 'cancelled', 'refunded'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-sm transition-colors",
+                statusFilter === status ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"
+              )}
+            >
+              {status === 'all' ? '全部' :
+               status === 'paid' ? '已支付' :
+               status === 'pending' ? '待支付' :
+               status === 'cancelled' ? '已取消' : '已退款'}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* 订单列表 */}
+      <div className="bg-[#16161d] rounded-2xl border border-white/5 overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/5">
+              <th className="text-left p-4 text-sm font-medium text-gray-400">订单号</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">用户</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">类型</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">金额</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">实付</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">支付方式</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">状态</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              [...Array(5)].map((_, i) => (
+                <tr key={i} className="border-b border-white/5">
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-24 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-20 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-24 animate-pulse" /></td>
+                </tr>
+              ))
+            ) : orders.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="p-8 text-center text-gray-500">暂无订单</td>
+              </tr>
+            ) : (
+              orders.map((order) => (
+                <tr key={order.id} className="border-b border-white/5 hover:bg-white/5">
+                  <td className="p-4 font-mono text-sm">{order.order_no}</td>
+                  <td className="p-4">{order.user.username}</td>
+                  <td className="p-4">
+                    <span className="px-2 py-1 bg-white/5 rounded text-sm">
+                      {order.type === 'recharge' ? '充值' :
+                       order.type === 'package' ? '套餐' :
+                       order.type === 'vip' ? 'VIP' : '其他'}
+                    </span>
+                  </td>
+                  <td className="p-4 text-gray-400">¥{order.amount.toFixed(2)}</td>
+                  <td className="p-4 font-medium">¥{order.actual_amount.toFixed(2)}</td>
+                  <td className="p-4 text-gray-400">
+                    {order.payment_method === 'alipay' ? '支付宝' :
+                     order.payment_method === 'wechat' ? '微信' : '-'}
+                  </td>
+                  <td className="p-4">
+                    <span className={cn(
+                      "px-2 py-1 rounded text-xs",
+                      order.status === 'paid' ? 'bg-green-500/20 text-green-400' :
+                      order.status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
+                      order.status === 'cancelled' ? 'bg-gray-500/20 text-gray-400' :
+                      'bg-red-500/20 text-red-400'
+                    )}>
+                      {order.status === 'paid' ? '已支付' :
+                       order.status === 'pending' ? '待支付' :
+                       order.status === 'cancelled' ? '已取消' : '已退款'}
+                    </span>
+                  </td>
+                  <td className="p-4 text-gray-400 text-sm">
+                    {new Date(order.created_at).toLocaleString()}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 分页 */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 bg-white/5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+          >
+            上一页
+          </button>
+          <span className="text-sm text-gray-400">{page} / {totalPages}</span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-4 py-2 bg-white/5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+          >
+            下一页
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
-// 渠道管理
-function ChannelsContent() {
-  const channels = [
-    { name: 'Wan2.1-14B', status: 'online', requests: 12345, success_rate: 98.5, avg_time: '30s' },
-    { name: 'Wan2.1-1.3B', status: 'online', requests: 23456, success_rate: 99.1, avg_time: '15s' },
-    { name: 'Vidu', status: 'online', requests: 5678, success_rate: 97.2, avg_time: '45s' },
-    { name: '可灵', status: 'online', requests: 8901, success_rate: 96.8, avg_time: '60s' },
-  ]
+// 任务管理
+function TasksContent({ searchQuery }: { searchQuery: string }) {
+  const queryClient = useQueryClient()
+  const [page, setPage] = useState(1)
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-tasks', page, statusFilter, searchQuery],
+    queryFn: () => api.get('/v1/admin/tasks', {
+      params: {
+        page,
+        page_size: 20,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        search: searchQuery || undefined,
+      }
+    }),
+  })
+
+  const tasks: Task[] = data?.items || []
+  const totalPages = data?.total_pages || 1
+
+  // 取消任务
+  const cancelMutation = useMutation({
+    mutationFn: (taskId: string) => api.post(`/v1/admin/tasks/${taskId}/cancel`),
+    onSuccess: () => {
+      toast.success('任务已取消')
+      queryClient.invalidateQueries({ queryKey: ['admin-tasks'] })
+    },
+    onError: () => toast.error('操作失败'),
+  })
+
+  // 重试任务
+  const retryMutation = useMutation({
+    mutationFn: (taskId: string) => api.post(`/v1/admin/tasks/${taskId}/retry`),
+    onSuccess: () => {
+      toast.success('任务已重试')
+      queryClient.invalidateQueries({ queryKey: ['admin-tasks'] })
+    },
+    onError: () => toast.error('操作失败'),
+  })
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-4">
-        {channels.map((channel) => (
-          <div key={channel.name} className="bg-[#16161d] rounded-2xl p-6 border border-white/5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">{channel.name}</h3>
-              <span className={cn(
-                "flex items-center gap-1 text-sm",
-                channel.status === 'online' ? 'text-green-400' : 'text-red-400'
-              )}>
-                {channel.status === 'online' ? (
-                  <><CheckCircle className="w-4 h-4" /> 在线</>
-                ) : (
-                  <><XCircle className="w-4 h-4" /> 离线</>
-                )}
-              </span>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400">请求数</span>
-                <span>{channel.requests.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">成功率</span>
-                <span className="text-green-400">{channel.success_rate}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">平均耗时</span>
-                <span>{channel.avg_time}</span>
-              </div>
-            </div>
-          </div>
-        ))}
+      {/* 工具栏 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+            <RefreshCw className="w-4 h-4" />
+            刷新队列
+          </button>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {['all', 'pending', 'processing', 'completed', 'failed'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-sm transition-colors",
+                statusFilter === status ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"
+              )}
+            >
+              {status === 'all' ? '全部' :
+               status === 'pending' ? '排队中' :
+               status === 'processing' ? '生成中' :
+               status === 'completed' ? '已完成' : '失败'}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* 任务列表 */}
+      <div className="bg-[#16161d] rounded-2xl border border-white/5 overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/5">
+              <th className="text-left p-4 text-sm font-medium text-gray-400">任务ID</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">用户</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">模式</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">进度</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">状态</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">提示词</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">创建时间</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              [...Array(5)].map((_, i) => (
+                <tr key={i} className="border-b border-white/5">
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-20 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-12 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-16 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-32 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-24 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-8 bg-white/5 rounded w-20 animate-pulse" /></td>
+                </tr>
+              ))
+            ) : tasks.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="p-8 text-center text-gray-500">暂无任务</td>
+              </tr>
+            ) : (
+              tasks.map((task) => (
+                <tr key={task.task_id} className="border-b border-white/5 hover:bg-white/5">
+                  <td className="p-4 font-mono text-sm">#{task.task_no}</td>
+                  <td className="p-4">{task.user.username}</td>
+                  <td className="p-4">
+                    <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded text-xs">
+                      {task.mode}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    {task.status === 'processing' ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-cyan-500 rounded-full transition-all"
+                            style={{ width: `${task.progress}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-400">{task.progress}%</span>
+                      </div>
+                    ) : '-'}
+                  </td>
+                  <td className="p-4">
+                    <span className={cn(
+                      "px-2 py-1 rounded text-xs",
+                      task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                      task.status === 'processing' ? 'bg-blue-500/20 text-blue-400' :
+                      task.status === 'pending' ? 'bg-gray-500/20 text-gray-400' :
+                      'bg-red-500/20 text-red-400'
+                    )}>
+                      {task.status === 'completed' ? '已完成' :
+                       task.status === 'processing' ? '生成中' :
+                       task.status === 'pending' ? '排队中' :
+                       task.status === 'cancelled' ? '已取消' : '失败'}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className="text-sm text-gray-400 line-clamp-1 max-w-xs">
+                      {task.prompt}
+                    </span>
+                  </td>
+                  <td className="p-4 text-gray-400 text-sm">
+                    {new Date(task.created_at).toLocaleString()}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-1">
+                      {task.status === 'pending' && (
+                        <button 
+                          onClick={() => cancelMutation.mutate(task.task_id)}
+                          className="p-2 hover:bg-white/10 rounded-lg text-red-400" title="取消"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                      {task.status === 'failed' && (
+                        <button 
+                          onClick={() => retryMutation.mutate(task.task_id)}
+                          className="p-2 hover:bg-white/10 rounded-lg text-green-400" title="重试"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </button>
+                      )}
+                      {task.video_url && (
+                        <a href={task.video_url} target="_blank" className="p-2 hover:bg-white/10 rounded-lg" title="预览">
+                          <Eye className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 分页 */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 bg-white/5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+          >
+            上一页
+          </button>
+          <span className="text-sm text-gray-400">{page} / {totalPages}</span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-4 py-2 bg-white/5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+          >
+            下一页
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
-// 系统设置
-function SystemContent() {
+// 内容审核
+function ReviewContent() {
+  const queryClient = useQueryClient()
+  const [page, setPage] = useState(1)
+  const [selectedItem, setSelectedItem] = useState<ReviewItem | null>(null)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-review', page],
+    queryFn: () => api.get('/v1/admin/review/pending', {
+      params: { page, page_size: 20 }
+    }),
+  })
+
+  const items: ReviewItem[] = data?.items || []
+  const totalPages = data?.total_pages || 1
+
+  // 审核操作
+  const reviewMutation = useMutation({
+    mutationFn: ({ id, action }: { id: number; action: 'approve' | 'reject' }) =>
+      api.post(`/v1/admin/review/${id}/${action}`),
+    onSuccess: () => {
+      toast.success('审核操作成功')
+      queryClient.invalidateQueries({ queryKey: ['admin-review'] })
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
+      setSelectedItem(null)
+    },
+    onError: () => toast.error('操作失败'),
+  })
+
   return (
     <div className="space-y-4">
-      <div className="bg-[#16161d] rounded-2xl border border-white/5 p-6">
-        <h3 className="text-lg font-semibold mb-4">系统配置</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-white/5">
-            <div>
-              <div className="font-medium">用户注册</div>
-              <div className="text-sm text-gray-400">允许新用户注册</div>
-            </div>
-            <button className="w-12 h-6 bg-cyan-500 rounded-full relative">
-              <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
-            </button>
-          </div>
-          <div className="flex items-center justify-between py-3 border-b border-white/5">
-            <div>
-              <div className="font-medium">邮箱验证</div>
-              <div className="text-sm text-gray-400">注册需验证邮箱</div>
-            </div>
-            <button className="w-12 h-6 bg-white/20 rounded-full relative">
-              <div className="absolute left-1 top-1 w-4 h-4 bg-gray-400 rounded-full" />
-            </button>
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <div className="font-medium">内容审核</div>
-              <div className="text-sm text-gray-400">AI自动审核生成内容</div>
-            </div>
-            <button className="w-12 h-6 bg-cyan-500 rounded-full relative">
-              <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
-            </button>
+      {/* 提示 */}
+      <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+        <div className="flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-400" />
+          <div>
+            <div className="font-medium">待审核内容</div>
+            <div className="text-sm text-gray-400">请仔细审核每个作品，确保内容符合平台规范</div>
           </div>
         </div>
       </div>
+
+      {/* 审核列表 */}
+      <div className="bg-[#16161d] rounded-2xl border border-white/5 overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/5">
+              <th className="text-left p-4 text-sm font-medium text-gray-400">作品</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">作者</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">举报原因</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">时间</th>
+              <th className="text-left p-4 text-sm font-medium text-gray-400">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              [...Array(5)].map((_, i) => (
+                <tr key={i} className="border-b border-white/5">
+                  <td className="p-4"><div className="h-12 bg-white/5 rounded w-32 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-20 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-32 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-6 bg-white/5 rounded w-24 animate-pulse" /></td>
+                  <td className="p-4"><div className="h-8 bg-white/5 rounded w-24 animate-pulse" /></td>
+                </tr>
+              ))
+            ) : items.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="p-8 text-center text-gray-500">
+                  <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-500" />
+                  暂无待审核内容
+                </td>
+              </tr>
+            ) : (
+              items.map((item) => (
+                <tr key={item.id} className="border-b border-white/5 hover:bg-white/5">
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-16 h-10 rounded-lg bg-gray-800 overflow-hidden">
+                        {item.cover_url && (
+                          <img src={item.cover_url} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <span className="font-medium line-clamp-1">{item.title || '无标题'}</span>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    {item.user.nickname || item.user.username}
+                  </td>
+                  <td className="p-4">
+                    <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">
+                      {item.reason}
+                    </span>
+                  </td>
+                  <td className="p-4 text-gray-400 text-sm">
+                    {new Date(item.flagged_at).toLocaleString()}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setSelectedItem(item)}
+                        className="p-2 hover:bg-white/10 rounded-lg" title="查看"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => reviewMutation.mutate({ id: item.id, action: 'approve' })}
+                        className="p-2 hover:bg-green-500/10 rounded-lg text-green-400" title="通过"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => reviewMutation.mutate({ id: item.id, action: 'reject' })}
+                        className="p-2 hover:bg-red-500/10 rounded-lg text-red-400" title="拒绝"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 分页 */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 bg-white/5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+          >
+            上一页
+          </button>
+          <span className="text-sm text-gray-400">{page} / {totalPages}</span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-4 py-2 bg-white/5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+          >
+            下一页
+          </button>
+        </div>
+      )}
+
+      {/* 审核详情弹窗 */}
+      <AnimatePresence>
+        {selectedItem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={() => setSelectedItem(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#16161d] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                <h3 className="font-semibold">审核详情</h3>
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="p-2 hover:bg-white/10 rounded-lg"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-auto">
+                <div className="aspect-video bg-black">
+                  {selectedItem.video_url && (
+                    <video src={selectedItem.video_url} controls className="w-full h-full" />
+                  )}
+                </div>
+                
+                <div className="p-4 space-y-4">
+                  <div>
+                    <div className="text-sm text-gray-400 mb-1">标题</div>
+                    <div className="font-medium">{selectedItem.title || '无标题'}</div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-sm text-gray-400 mb-1">作者</div>
+                    <div>{selectedItem.user.nickname || selectedItem.user.username}</div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-sm text-gray-400 mb-1">举报原因</div>
+                    <div className="text-red-400">{selectedItem.reason}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 border-t border-white/5 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => reviewMutation.mutate({ id: selectedItem.id, action: 'reject' })}
+                  className="px-6 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                >
+                  拒绝
+                </button>
+                <button
+                  onClick={() => reviewMutation.mutate({ id: selectedItem.id, action: 'approve' })}
+                  className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  通过
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

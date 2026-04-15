@@ -1,6 +1,8 @@
 # 视频生成任务 (Celery)
+# Sprint 4: S4-F4 监控日志
 
 import asyncio
+import time
 from celery import Celery
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +14,7 @@ from app.models.user import User
 from app.clients.comfyui_client import comfyui_client
 from app.clients.siliconflow_client import siliconflow_client
 from app.services.router import is_comfyui_path, is_siliconflow_path, ExecutionPath
+from app.services.monitoring import monitoring_service
 
 # Celery配置
 celery_app = Celery(
@@ -48,6 +51,14 @@ def process_generation_task(self, task_id: str):
 
 async def _process_generation_async(task_id: str):
     """异步执行视频生成"""
+    start_time = time.time()
+    
+    # 记录任务开始 (Sprint 4: S4-F4 监控)
+    monitoring_service.log_task_event(
+        task_id=task_id,
+        event="started",
+        status="processing"
+    )
 
     # 1. 获取任务
     async with AsyncSessionLocal() as session:
@@ -56,12 +67,20 @@ async def _process_generation_async(task_id: str):
         )
         task = result.scalar_one_or_none()
         if not task:
+            monitoring_service.log_task_event(
+                task_id=task_id,
+                event="not_found"
+            )
             return
 
         # 更新状态为processing
         task.status = "processing"
         task.progress = 10
         await session.commit()
+
+        # 推送 WebSocket 进度
+        from app.api.websocket import push_task_progress
+        await push_task_progress(task.id, "processing", 10)
 
         # 2. 根据执行路径调用不同服务
         execution_path = task.execution_path
@@ -80,7 +99,10 @@ async def _process_generation_async(task_id: str):
             task.error = str(e)
             video_url = None
 
-        # 3. 更新最终状态
+        # 3. 计算执行时间
+        duration_ms = int((time.time() - start_time) * 1000)
+        
+        # 4. 更新最终状态
         if video_url:
             task.status = "completed"
             task.progress = 100
@@ -88,10 +110,40 @@ async def _process_generation_async(task_id: str):
 
             # 扣除用户Token
             await _deduct_user_tokens(session, task.user_id, task.token_cost)
+            
+            # 记录成功 (Sprint 4: S4-F4 监控)
+            monitoring_service.log_task_event(
+                task_id=task_id,
+                event="completed",
+                user_id=str(task.user_id),
+                status="completed",
+                duration_ms=duration_ms
+            )
         else:
             task.status = "failed"
             if not task.error:
                 task.error = "Generation failed"
+            
+            # 记录失败并告警 (Sprint 4: S4-F4 监控)
+            monitoring_service.log_task_event(
+                task_id=task_id,
+                event="failed",
+                user_id=str(task.user_id),
+                status="failed",
+                error=task.error,
+                duration_ms=duration_ms
+            )
+            
+            # 发送任务失败告警
+            import asyncio
+            asyncio.create_task(
+                monitoring_service.alert_task_failure(
+                    task_id=task_id,
+                    user_id=str(task.user_id),
+                    error_message=task.error or "Unknown error",
+                    execution_path=execution_path
+                )
+            )
 
         task.completed_at = asyncio.get_event_loop().time()
         await session.commit()

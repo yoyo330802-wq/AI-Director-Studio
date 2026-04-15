@@ -1,4 +1,4 @@
-# 硅基流动 API 客户端 (Vidu/可灵)
+# 硅基流动 API 客户端 (Wan2.2视频模型)
 
 import httpx
 from typing import Optional, Dict, Any
@@ -107,17 +107,28 @@ class SiliconFlowClient:
             return {"status": "failed", "video_url": None, "progress": 0, "error": str(e)}
 
     async def is_available(self) -> bool:
-        """检查 API 是否可用"""
+        """检查 API 是否可用 - 通过列出模型验证"""
         if not self.api_key:
             return False
 
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.get(
-                    f"{self.BASE_URL}/balance",
+                    f"{self.BASE_URL}/models",
                     headers=self._headers(),
                 )
-                return resp.status_code == 200
+                if resp.status_code != 200:
+                    return False
+                # 检查是否有视频模型
+                data = resp.json()
+                video_models = [
+                    m["id"] for m in data.get("data", [])
+                    if "video" in m["id"].lower()
+                    or "vidu" in m["id"].lower()
+                    or "kling" in m["id"].lower()
+                    or "wan" in m["id"].lower()
+                ]
+                return len(video_models) > 0
         except Exception:
             return False
 

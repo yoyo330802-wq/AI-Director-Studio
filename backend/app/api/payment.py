@@ -13,7 +13,7 @@ from urllib.parse import urlencode, quote
 import base64
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -306,16 +306,177 @@ def create_order(
 
 
 @router.post("/notify/alipay")
-def alipay_notify(db: Session = Depends(get_db)):
-    """支付宝异步回调"""
-    # 注意：实际应该解析POST body
+def alipay_notify(request: Request, db: Session = Depends(get_db)):
+    """支付宝异步回调
+    
+    验签流程:
+    1. 解析 POST body 中的表单数据
+    2. 提取 sign 和 sign_type
+    3. 使用支付宝公钥验签
+    4. 验签通过后处理订单（幂等）
+    """
+    try:
+        # 解析表单数据
+        form_data = dict(request.form())
+        if not form_data:
+            # 尝试解析 JSON
+            form_data = dict(request.json())
+    except Exception:
+        return {"status": "fail", "msg": "Invalid request body"}
+    
+    # 提取签名
+    sign = form_data.get("sign")
+    sign_type = form_data.get("sign_type", "RSA2")
+    
+    if not sign:
+        return {"status": "fail", "msg": "Missing signature"}
+    
+    # 支付宝回调参数
+    trade_status = form_data.get("trade_status", "")
+    out_trade_no = form_data.get("out_trade_no", "")  # 商户订单号
+    trade_no = form_data.get("trade_no", "")  # 支付宝交易号
+    total_amount = form_data.get("total_amount", "0")
+    
+    # 验签
+    if alipay_service and alipay_service.alipay_public_key:
+        if not alipay_service.verify_signature(form_data, sign):
+            print(f"[Alipay Notify] Signature verification failed for order {out_trade_no}")
+            return {"status": "fail", "msg": "Signature verification failed"}
+    
+    # 只处理交易成功的回调
+    if trade_status not in ("TRADE_SUCCESS", "TRADE_FINISHED"):
+        print(f"[Alipay Notify] Trade status not success: {trade_status}")
+        return {"status": "success"}  # 返回success避免重复通知
+    
+    # 幂等处理：检查订单是否已处理
+    order = db.query(Order).filter(Order.order_no == out_trade_no).first()
+    if not order:
+        print(f"[Alipay Notify] Order not found: {out_trade_no}")
+        return {"status": "fail", "msg": "Order not found"}
+    
+    if order.status == OrderStatus.PAID:
+        # 订单已处理，直接返回成功（幂等）
+        print(f"[Alipay Notify] Order already paid: {out_trade_no}")
+        return {"status": "success"}
+    
+    # 更新订单状态
+    order.status = OrderStatus.PAID
+    order.payment_method = PaymentMethod.ALIPAY
+    order.payment_no = trade_no
+    order.paid_at = datetime.utcnow()
+    
+    # 获取用户并增加余额
+    user = db.query(User).filter(User.id == order.user_id).first()
+    if user:
+        amount = float(total_amount) if total_amount else order.actual_amount
+        user.balance = (user.balance or 0) + amount
+        user.total_balance = (user.total_balance or 0) + amount
+        print(f"[Alipay Notify] Added {amount} to user {user.id} balance. New balance: {user.balance}")
+    
+    # 更新交易记录状态
+    transaction = db.query(PaymentTransaction).filter(
+        PaymentTransaction.order_id == order.id
+    ).order_by(PaymentTransaction.created_at.desc()).first()
+    if transaction:
+        transaction.status = "success"
+        transaction.third_party_transaction_id = trade_no
+        transaction.paid_at = datetime.utcnow()
+    
+    db.commit()
+    print(f"[Alipay Notify] Successfully processed payment for order {out_trade_no}")
+    
     return {"status": "success"}
 
 
 @router.post("/notify/wechat")
-def wechat_notify(db: Session = Depends(get_db)):
-    """微信支付异步回调"""
-    return {"status": "success"}
+def wechat_notify(request: Request, db: Session = Depends(get_db)):
+    """微信支付异步回调
+    
+    验签流程:
+    1. 解析 XML body
+    2. 提取 sign 字段
+    3. 使用微信平台证书/商户API密钥验签
+    4. 验签通过后处理订单（幂等）
+    """
+    try:
+        # 解析 XML body
+        xml_data = request.body().decode("utf-8")
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(xml_data)
+        params = {child.tag: child.text for child in root}
+    except Exception as e:
+        print(f"[Wechat Notify] Failed to parse XML: {e}")
+        return {"status": "FAIL", "msg": "Invalid XML"}
+    
+    # 提取关键字段
+    return_code = params.get("return_code", "")
+    result_code = params.get("result_code", "")
+    out_trade_no = params.get("out_trade_no", "")  # 商户订单号
+    transaction_id = params.get("transaction_id", "")  # 微信订单号
+    total_fee = params.get("total_fee", "0")  # 订单金额(分)
+    
+    # 返回给微信服务器
+    def wechat_reply(success: bool, msg: str = ""):
+        if success:
+            return "<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>"
+        else:
+            return f"<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[{msg}]]></return_msg></xml>"
+    
+    # 只处理成功的支付回调
+    if return_code != "SUCCESS" or result_code != "SUCCESS":
+        print(f"[Wechat Notify] Payment not success: return_code={return_code}, result_code={result_code}")
+        return wechat_reply(False, "Payment not success")
+    
+    # 验签
+    if wechat_service and wechat_service.api_key:
+        received_sign = params.get("sign", "")
+        # 构造待验签字符串（排除sign字段）
+        sign_params = {k: v for k, v in params.items() if k != "sign" and v}
+        calculated_sign = wechat_service.sign(sign_params)
+        if calculated_sign != received_sign:
+            print(f"[Wechat Notify] Signature verification failed for order {out_trade_no}")
+            print(f"[Wechat Notify] Received: {received_sign}, Calculated: {calculated_sign}")
+            return wechat_reply(False, "Signature verification failed")
+    
+    # 幂等处理：检查订单是否已处理
+    order = db.query(Order).filter(Order.order_no == out_trade_no).first()
+    if not order:
+        print(f"[Wechat Notify] Order not found: {out_trade_no}")
+        return wechat_reply(False, "Order not found")
+    
+    if order.status == OrderStatus.PAID:
+        # 订单已处理，直接返回成功（幂等）
+        print(f"[Wechat Notify] Order already paid: {out_trade_no}")
+        return wechat_reply(True)
+    
+    # 更新订单状态
+    order.status = OrderStatus.PAID
+    order.payment_method = PaymentMethod.WECHAT
+    order.payment_no = transaction_id
+    order.paid_at = datetime.utcnow()
+    
+    # 获取用户并增加余额
+    user = db.query(User).filter(User.id == order.user_id).first()
+    if user:
+        # 微信支付金额单位是分，转换为元
+        amount = float(total_fee) / 100.0 if total_fee else order.actual_amount
+        user.balance = (user.balance or 0) + amount
+        user.total_balance = (user.total_balance or 0) + amount
+        print(f"[Wechat Notify] Added {amount} to user {user.id} balance. New balance: {user.balance}")
+    
+    # 更新交易记录状态
+    transaction = db.query(PaymentTransaction).filter(
+        PaymentTransaction.order_id == order.id
+    ).order_by(PaymentTransaction.created_at.desc()).first()
+    if transaction:
+        transaction.status = "success"
+        transaction.third_party_transaction_id = transaction_id
+        transaction.paid_at = datetime.utcnow()
+    
+    db.commit()
+    print(f"[Wechat Notify] Successfully processed payment for order {out_trade_no}")
+    
+    return wechat_reply(True)
 
 
 @router.get("/status/{order_no}")

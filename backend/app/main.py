@@ -10,6 +10,10 @@ from app.api.auth import router as auth_router
 from app.api.users import router as users_router
 from app.api.generate import router as generate_router
 from app.api.websocket import router as websocket_router
+from app.api.payment import router as payment_router
+from app.api.moderation import router as moderation_router
+from app.api.packages import router as packages_router
+from app.services.cache import cache_service
 
 
 @asynccontextmanager
@@ -17,8 +21,15 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     # 启动
     await init_db()
+    
+    # 启动Redis缓存 (Sprint 5: S5-F1)
+    if settings.REDIS_CACHE_ENABLED:
+        await cache_service.connect()
+    
     yield
+    
     # 关闭
+    await cache_service.disconnect()
     await close_db()
 
 
@@ -42,6 +53,9 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(generate_router)
 app.include_router(websocket_router)
+app.include_router(payment_router, prefix="/api/v1/payment")
+app.include_router(moderation_router)
+app.include_router(packages_router)  # Sprint 5: S5-F3 套餐API
 
 
 @app.get("/api/v1/health")

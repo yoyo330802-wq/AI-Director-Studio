@@ -36,13 +36,17 @@ async def init_db():
     """初始化数据库 - 创建所有表"""
     from app.models.user import User
     from app.models.task import GenerationTask
+    # Sprint 3-5 models
+    from app.models.database import (Base, Package, Order, Task as VideoTask,
+                                     Video, PaymentTransaction, ChannelConfig,
+                                     SystemConfig, VideoTemplate)
 
     if is_async_db:
         async with _async_engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.create_all)
+            await conn.run_sync(Base.metadata.create_all)
     else:
         with engine.begin() as conn:
-            SQLModel.metadata.create_all(bind=conn)
+            Base.metadata.create_all(bind=conn)
     print("✅ Database tables created")
 
 

@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import { 
   Search, Filter, Grid, List, Heart, Share2, 
   Play, Eye, MoreVertical, Tag, User, Clock,
-  TrendingUp, Star, Flame
+  TrendingUp, Star, Flame, X, ChevronDown
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
@@ -25,7 +25,7 @@ const CATEGORIES = [
 // 排序选项
 const SORT_OPTIONS = [
   { id: 'latest', name: '最新' },
-  { id: 'popular', name: '最热' },
+  { id: 'popular', name: '热门' },
   { id: 'trending', name: '趋势' },
 ]
 
@@ -59,16 +59,28 @@ export default function GalleryPage() {
   const [category, setCategory] = useState('all')
   const [sortBy, setSortBy] = useState('latest')
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [viewMode, setViewMode] = useState<'grid' | 'masonry' | 'list'>('masonry')
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [page, setPage] = useState(1)
+  
+  // 无限滚动加载
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
 
-  // 获取视频列表
-  const { data, isLoading, refetch } = useQuery({
+  // 获取视频列表 - 无限滚动
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch
+  } = useInfiniteQuery({
     queryKey: ['videos', category, sortBy, searchQuery],
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 1 }) => {
       const params = new URLSearchParams({
-        page: '1',
+        page: pageParam.toString(),
         page_size: '20',
         sort: sortBy,
       })
@@ -80,9 +92,41 @@ export default function GalleryPage() {
       }
       return api.get(`/v1/videos?${params}`)
     },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.page < lastPage.total_pages) {
+        return lastPage.page + 1
+      }
+      return undefined
+    },
+    initialPageParam: 1,
   })
 
-  const videos: Video[] = data?.items || []
+  const videos: Video[] = data?.pages.flatMap(page => page.items || []) || []
+
+  // 无限滚动监听
+  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
+    const [target] = entries
+    if (target.isIntersecting && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
+
+  useEffect(() => {
+    const element = loadMoreRef.current
+    if (!element) return
+    
+    observerRef.current = new IntersectionObserver(handleObserver, {
+      threshold: 0.1,
+      rootMargin: '100px'
+    })
+    observerRef.current.observe(element)
+    
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+    }
+  }, [handleObserver])
 
   // 格式化时长
   const formatDuration = (seconds: number) => {
@@ -118,7 +162,8 @@ export default function GalleryPage() {
   }
 
   // 点赞
-  const handleLike = async (videoId: number) => {
+  const handleLike = async (videoId: number, e: React.MouseEvent) => {
+    e.stopPropagation()
     try {
       await api.post(`/v1/videos/${videoId}/like`)
       toast.success('点赞成功')
@@ -129,7 +174,8 @@ export default function GalleryPage() {
   }
 
   // 分享
-  const handleShare = async (video: Video) => {
+  const handleShare = async (video: Video, e: React.MouseEvent) => {
+    e.stopPropagation()
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/video/${video.id}`)
       toast.success('链接已复制')
@@ -169,6 +215,18 @@ export default function GalleryPage() {
             {/* 视图切换 */}
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setViewMode('masonry')}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  viewMode === 'masonry' 
+                    ? "bg-cyan-400/20 text-cyan-400" 
+                    : "text-gray-400 hover:text-white"
+                )}
+                title="瀑布流"
+              >
+                <Grid className="w-4 h-4" />
+              </button>
+              <button
                 onClick={() => setViewMode('grid')}
                 className={cn(
                   "p-2 rounded-lg transition-colors",
@@ -176,8 +234,9 @@ export default function GalleryPage() {
                     ? "bg-cyan-400/20 text-cyan-400" 
                     : "text-gray-400 hover:text-white"
                 )}
+                title="网格"
               >
-                <Grid className="w-4 h-4" />
+                <Grid className="w-4 h-4" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }} />
               </button>
               <button
                 onClick={() => setViewMode('list')}
@@ -187,6 +246,7 @@ export default function GalleryPage() {
                     ? "bg-cyan-400/20 text-cyan-400" 
                     : "text-gray-400 hover:text-white"
                 )}
+                title="列表"
               >
                 <List className="w-4 h-4" />
               </button>
@@ -236,13 +296,13 @@ export default function GalleryPage() {
           </div>
           
           <div className="text-sm text-gray-400">
-            {videos.length} 个作品
+            {videos.length}+ 个作品
           </div>
         </div>
 
         {/* 视频列表 */}
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className={viewMode === 'masonry' ? 'columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4' : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'}>
             {[...Array(8)].map((_, i) => (
               <div
                 key={i}
@@ -262,7 +322,92 @@ export default function GalleryPage() {
               快去创作你的第一个AI视频吧！
             </p>
           </div>
+        ) : viewMode === 'masonry' ? (
+          /* 瀑布流布局 */
+          <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+            {videos.map((video, index) => (
+              <motion.div
+                key={video.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+                className="break-inside-avoid group relative bg-white/5 rounded-xl overflow-hidden hover:bg-white/10 transition-colors cursor-pointer"
+                onClick={() => setSelectedVideo(video)}
+              >
+                {/* 封面 */}
+                <div className="relative overflow-hidden">
+                  <img
+                    src={video.cover_url || video.thumbnail_url}
+                    alt={video.title}
+                    className="w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                  
+                  {/* 播放按钮 */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Play className="w-6 h-6 text-white ml-1" />
+                    </div>
+                  </div>
+                  
+                  {/* 时长 */}
+                  <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/70 rounded text-xs">
+                    {formatDuration(video.duration)}
+                  </div>
+                  
+                  {/* 标签 */}
+                  {video.is_featured && (
+                    <div className="absolute top-2 left-2 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full text-xs font-medium">
+                      精选
+                    </div>
+                  )}
+                </div>
+                
+                {/* 信息 */}
+                <div className="p-3">
+                  <h3 className="font-medium text-sm line-clamp-2 mb-2">
+                    {video.title || '无标题'}
+                  </h3>
+                  
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      <span>{video.user?.nickname || video.user?.username}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3 h-3" />
+                        {formatNumber(video.view_count)}
+                      </span>
+                      <button
+                        onClick={(e) => handleLike(video.id, e)}
+                        className="flex items-center gap-1 hover:text-rose-400 transition-colors"
+                      >
+                        <Heart className="w-3 h-3" />
+                        {formatNumber(video.like_count)}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* 标签 */}
+                  {video.tags && video.tags.length > 0 && (
+                    <div className="flex items-center gap-1 mt-2 flex-wrap">
+                      {video.tags.slice(0, 2).map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-1.5 py-0.5 bg-white/5 rounded text-xs text-gray-400"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
         ) : viewMode === 'grid' ? (
+          /* 网格布局 */
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {videos.map((video, index) => (
               <motion.div
@@ -342,6 +487,7 @@ export default function GalleryPage() {
             ))}
           </div>
         ) : (
+          /* 列表布局 */
           <div className="space-y-4">
             {videos.map((video, index) => (
               <motion.div
@@ -392,19 +538,13 @@ export default function GalleryPage() {
                 {/* 操作 */}
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleLike(video.id)
-                    }}
+                    onClick={(e) => handleLike(video.id, e)}
                     className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                   >
                     <Heart className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleShare(video)
-                    }}
+                    onClick={(e) => handleShare(video, e)}
                     className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                   >
                     <Share2 className="w-4 h-4" />
@@ -414,6 +554,19 @@ export default function GalleryPage() {
             ))}
           </div>
         )}
+
+        {/* 加载更多 */}
+        <div ref={loadMoreRef} className="py-8 text-center">
+          {isFetchingNextPage && (
+            <div className="flex items-center justify-center gap-2 text-gray-400">
+              <div className="w-5 h-5 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" />
+              加载中...
+            </div>
+          )}
+          {!hasNextPage && videos.length > 0 && (
+            <p className="text-gray-500">— 已加载全部 {videos.length} 个作品 —</p>
+          )}
+        </div>
       </div>
 
       {/* 视频详情弹窗 */}
@@ -433,18 +586,24 @@ export default function GalleryPage() {
               className="bg-[#16161d] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="aspect-video bg-black">
+              <div className="aspect-video bg-black relative">
                 <video
                   src={selectedVideo.video_url}
                   controls
                   className="w-full h-full"
                   autoPlay
                 />
+                <button
+                  onClick={() => setSelectedVideo(null)}
+                  className="absolute top-4 right-4 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
               
-              <div className="p-6">
+              <div className="p-6 max-h-[50vh] overflow-y-auto">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
+                  <div className="flex-1">
                     <h2 className="text-xl font-bold mb-2">
                       {selectedVideo.title || '无标题'}
                     </h2>
@@ -489,14 +648,14 @@ export default function GalleryPage() {
                   
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleLike(selectedVideo.id)}
+                      onClick={(e) => handleLike(selectedVideo.id, e)}
                       className="flex items-center gap-2 px-4 py-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30 transition-colors"
                     >
                       <Heart className="w-4 h-4" />
                       点赞
                     </button>
                     <button
-                      onClick={() => handleShare(selectedVideo)}
+                      onClick={(e) => handleShare(selectedVideo, e)}
                       className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Share2 className="w-4 h-4" />
