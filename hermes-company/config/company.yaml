@@ -1,0 +1,67 @@
+# Hermes Agent 服务公司配置
+
+company:
+  name: Hermes通用服务公司
+  version: "1.0"
+  architecture: hierarchical-supervisor  # 1个CEO + 3个执行者
+
+ceo:
+  role: 调度者
+  description: 主Agent扮演，负责任务接收、判断、分配、整合、交付
+  tools: [file, terminal]  # 管理项目状态
+
+execution_agents:
+  - name: Engineer
+    role: 工程师
+    toolsets: [terminal, file, web]
+    max_iterations: 50
+    gan_enabled: true  # 开发任务启用GAN
+    types:
+      - 开发
+      - 代码
+      - 系统
+      - 网站
+      - 搭建
+      - 实现
+
+  - name: Researcher
+    role: 研究员
+    toolsets: [web, file]
+    max_iterations: 30
+    gan_enabled: false
+    types:
+      - 调研
+      - 研究
+      - 分析
+      - 查
+      - 竞品
+      - 资料
+      - 数据
+
+  - name: Creator
+    role: 创作者
+    toolsets: [file, web]
+    max_iterations: 30
+    gan_enabled: false
+    types:
+      - 方案
+      - 文案
+      - 脚本
+      - 撰写
+      - 视频
+      - 创作
+
+parallel:
+  max_concurrent_subagents: 3  # Hermes限制
+  overflow_strategy: queue  # 满载时排队
+
+project_tracking:
+  registry_file: shared/project-registry.json
+  status_flow:
+    - NEW
+    - IN_REVIEW
+    - ASSIGNED
+    - IN_PROGRESS
+    - QUEUED
+    - DELIVERED
+    - COMPLETED

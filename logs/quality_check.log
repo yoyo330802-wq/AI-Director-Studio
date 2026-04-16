@@ -738,3 +738,41 @@ To get access to the TypeScript compiler, [34mtsc[0m, from the command line ei
   TypeScript:  122752 总计
 ========== 检查完成 2026年 04月 16日 星期四 00:04:54 CST ==========
 
+========== 代码质量检查 2026年 04月 16日 星期四 03:03:29 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   6408 总计
+  TypeScript:  122752 总计
+========== 检查完成 2026年 04月 16日 星期四 03:03:31 CST ==========
+
+========== 代码质量检查 2026年 04月 16日 星期四 06:04:25 CST ==========
+检查Python语法...
+✅ Python语法检查通过
+检查TypeScript语法...
+✅ TypeScript检查完成
+检查依赖配置...
+✅ 后端依赖文件存在
+✅ 前端依赖文件存在
+检查关键文件...
+✅ /home/wj/workspace/manai/backend/app/main.py 存在
+✅ /home/wj/workspace/manai/backend/app/config.py 存在
+✅ /home/wj/workspace/manai/backend/app/router/smart_router.py 存在
+✅ /home/wj/workspace/manai/frontend/app/studio/page.tsx 存在
+✅ /home/wj/workspace/manai/frontend/lib/api.ts 存在
+代码统计:
+  Python:   6408 总计
+  TypeScript:  122752 总计
+========== 检查完成 2026年 04月 16日 星期四 06:04:27 CST ==========
+
