@@ -136,7 +136,7 @@ class AlipayService:
                 hashes.SHA256()
             )
             return True
-        except:
+        except Exception:
             return False
 
 
@@ -156,9 +156,10 @@ class WechatPayService:
     
     def sign(self, params: dict) -> str:
         """MD5签名"""
-        sorted_params = sorted(params.items())
+        # 过滤掉None值和空字符串
+        sorted_params = sorted([(k, v) for k, v in params.items() if v is not None and v != ""])
         string_a = "&".join([
-            f"{k}={v}" for k, v in sorted_params if v
+            f"{k}={v}" for k, v in sorted_params
         ])
         string_sign_temp = f"{string_a}&key={self.api_key}"
         return hashlib.md5(
@@ -210,6 +211,9 @@ class WechatPayService:
             }
         else:
             raise Exception(result.get("return_msg", "微信下单失败"))
+
+
+from app.core.lock import lock_with_timeout, get_order_lock_key
 
 
 # 初始化支付服务
@@ -305,7 +309,7 @@ def create_order(
         }
     
     return RechargeResponse(
-        order_id=order.id,
+        order_id=str(order.id),
         order_no=order.order_no,
         amount=amount,
         payment_method=request.payment_method,
@@ -335,7 +339,9 @@ def alipay_notify(request: Request, db: Session = Depends(get_db)):
         if not form_data:
             # 尝试解析 JSON
             form_data = dict(request.json())
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.error(f"[Alipay Notify] Failed to parse request: {e}")
         return {"status": "fail", "msg": "Invalid request body"}
     
     # 提取签名
@@ -362,42 +368,51 @@ def alipay_notify(request: Request, db: Session = Depends(get_db)):
         print(f"[Alipay Notify] Trade status not success: {trade_status}")
         return {"status": "success"}  # 返回success避免重复通知
     
-    # 幂等处理：检查订单是否已处理
-    order = db.query(Order).filter(Order.order_no == out_trade_no).first()
-    if not order:
-        print(f"[Alipay Notify] Order not found: {out_trade_no}")
-        return {"status": "fail", "msg": "Order not found"}
-    
-    if order.status == OrderStatus.PAID:
-        # 订单已处理，直接返回成功（幂等）
-        print(f"[Alipay Notify] Order already paid: {out_trade_no}")
-        return {"status": "success"}
-    
-    # 更新订单状态
-    order.status = OrderStatus.PAID
-    order.payment_method = PaymentMethod.ALIPAY
-    order.payment_no = trade_no
-    order.paid_at = datetime.utcnow()
-    
-    # 获取用户并增加余额
-    user = db.query(User).filter(User.id == order.user_id).first()
-    if user:
-        amount = float(total_amount) if total_amount else order.actual_amount
-        user.balance = (user.balance or 0) + amount
-        user.total_balance = (user.total_balance or 0) + amount
-        print(f"[Alipay Notify] Added {amount} to user {user.id} balance. New balance: {user.balance}")
-    
-    # 更新交易记录状态
-    transaction = db.query(PaymentTransaction).filter(
-        PaymentTransaction.order_id == order.id
-    ).order_by(PaymentTransaction.created_at.desc()).first()
-    if transaction:
-        transaction.status = "success"
-        transaction.third_party_transaction_id = trade_no
-        transaction.paid_at = datetime.utcnow()
-    
-    db.commit()
-    print(f"[Alipay Notify] Successfully processed payment for order {out_trade_no}")
+    # ===== 分布式锁保护（防止并发重复处理） =====
+    lock_key = get_order_lock_key(out_trade_no)
+    try:
+        with lock_with_timeout(lock_key, timeout=10, blocking_timeout=5):
+            # 幂等处理：检查订单是否已处理
+            order = db.query(Order).filter(Order.order_no == out_trade_no).first()
+            if not order:
+                print(f"[Alipay Notify] Order not found: {out_trade_no}")
+                return {"status": "fail", "msg": "Order not found"}
+            
+            if order.status == OrderStatus.PAID:
+                # 订单已处理，直接返回成功（幂等）
+                print(f"[Alipay Notify] Order already paid: {out_trade_no}")
+                return {"status": "success"}
+            
+            # 更新订单状态
+            order.status = OrderStatus.PAID
+            order.payment_method = PaymentMethod.ALIPAY
+            order.payment_no = trade_no
+            order.paid_at = datetime.utcnow()
+            
+            # 获取用户并增加余额
+            user = db.query(User).filter(User.id == order.user_id).first()
+            if user:
+                amount = float(total_amount) if total_amount else order.actual_amount
+                user.balance = (user.balance or 0) + amount
+                user.total_balance = (user.total_balance or 0) + amount
+                print(f"[Alipay Notify] Added {amount} to user {user.id} balance. New balance: {user.balance}")
+            
+            # 更新交易记录状态
+            transaction = db.query(PaymentTransaction).filter(
+                PaymentTransaction.order_id == order.id
+            ).order_by(PaymentTransaction.created_at.desc()).first()
+            if transaction:
+                transaction.status = "success"
+                transaction.third_party_transaction_id = trade_no
+                transaction.paid_at = datetime.utcnow()
+            
+            db.commit()
+            print(f"[Alipay Notify] Successfully processed payment for order {out_trade_no}")
+            
+    except Exception as e:
+        db.rollback()
+        print(f"[Alipay Notify] Error processing payment: {e}")
+        return {"status": "fail", "msg": str(e)}
     
     return {"status": "success"}
 

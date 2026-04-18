@@ -52,13 +52,6 @@ def process_generation_task(self, task_id: str):
 async def _process_generation_async(task_id: str):
     """异步执行视频生成"""
     start_time = time.time()
-    
-    # 记录任务开始 (Sprint 4: S4-F4 监控)
-    monitoring_service.log_task_event(
-        task_id=task_id,
-        event="started",
-        status="processing"
-    )
 
     # 1. 获取任务
     async with AsyncSessionLocal() as session:
@@ -67,6 +60,20 @@ async def _process_generation_async(task_id: str):
         )
         task = result.scalar_one_or_none()
         if not task:
+            monitoring_service.log_task_event(
+                task_id=task_id,
+                event="not_found"
+            )
+            return
+
+        # 幂等性检查：避免重复处理
+        if task.status not in ("queued", "pending"):
+            monitoring_service.log_task_event(
+                task_id=task_id,
+                event="skipped",
+                reason=f"Task already in status: {task.status}"
+            )
+            return
             monitoring_service.log_task_event(
                 task_id=task_id,
                 event="not_found"
@@ -108,9 +115,8 @@ async def _process_generation_async(task_id: str):
             task.progress = 100
             task.video_url = video_url
 
-            # 扣除用户Token
-            await _deduct_user_tokens(session, task.user_id, task.token_cost)
-            
+            # NOTE: Token已在generate.py中预扣，此处不再重复扣除
+
             # 记录成功 (Sprint 4: S4-F4 监控)
             monitoring_service.log_task_event(
                 task_id=task_id,
@@ -145,7 +151,7 @@ async def _process_generation_async(task_id: str):
                 )
             )
 
-        task.completed_at = asyncio.get_event_loop().time()
+        task.completed_at = datetime.utcnow()
         await session.commit()
 
 

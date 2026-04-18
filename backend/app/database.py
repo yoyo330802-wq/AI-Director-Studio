@@ -40,6 +40,8 @@ async def init_db():
     from app.models.database import (Base, Package, Order, Task as VideoTask,
                                      Video, PaymentTransaction, ChannelConfig,
                                      SystemConfig, VideoTemplate)
+    # Hermes models
+    from app.hermes.models import HermesTask
 
     if is_async_db:
         async with _async_engine.begin() as conn:

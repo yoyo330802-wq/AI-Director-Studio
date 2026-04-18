@@ -357,6 +357,12 @@ async def hermes_websocket_events(
 
     await websocket.accept()
 
+    # 任务归属验证
+    task = await hermes_state.get_task(task_id, user_id=user_id)
+    if not task:
+        await websocket.close(code=4003, reason="Task not found")
+        return
+
     # 订阅Redis事件
     pubsub = await hermes_state.subscribe_events(task_id)
 

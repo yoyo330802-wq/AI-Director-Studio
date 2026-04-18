@@ -56,9 +56,11 @@ async def websocket_task_progress(
     token: str = Query(...),
 ):
     """WebSocket推送任务进度
-    
+
     连接: ws://localhost:8000/ws/tasks/{task_id}?token={jwt_token}
-    内部使用Redis pub/sub，支持多worker
+
+    注意: 实际生产环境应该使用WebSocket子协议或自定义header传递token，
+    此处使用query parameter是简化实现，生产环境应改为更安全的方式
     """
     # 验证token
     user_id = decode_token(token)

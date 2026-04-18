@@ -4,10 +4,13 @@ Sprint 5: S5-F1 Redis缓存
 """
 import json
 import hashlib
+import logging
 from typing import Optional, Any, List
 from datetime import timedelta
 import redis.asyncio as redis
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class CacheService:
@@ -36,10 +39,10 @@ class CacheService:
             )
             await self._redis.ping()
             self._connected = True
-            print("✅ Redis connected successfully")
+            logger.info("Redis connected successfully")
             return True
         except Exception as e:
-            print(f"⚠️ Redis connection failed: {e}")
+            logger.warning(f"Redis connection failed: {e}")
             self._connected = False
             return False
     

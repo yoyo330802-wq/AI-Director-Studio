@@ -1,8 +1,11 @@
 # 硅基流动 API 客户端 (Wan2.2视频模型)
 
+import logging
 import httpx
 from typing import Optional, Dict, Any
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class SiliconFlowClient:
@@ -34,7 +37,7 @@ class SiliconFlowClient:
             task_id 如果成功提交，否则 None
         """
         if not self.api_key:
-            print("[SiliconFlow] No API key configured")
+            logger.warning("SiliconFlow API key not configured")
             return None
 
         # SiliconFlow 统一 endpoint - 视频生成

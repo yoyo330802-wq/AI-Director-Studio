@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import asyncio
 import uuid
+from urllib.parse import urlparse
 
 from app.database import get_session
 from app.models.user import User
@@ -59,6 +60,21 @@ async def create_generation_task(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"内容审核未通过: {moderation_result.reason}"
         )
+
+    # 验证image_url格式（如果提供）
+    if task_data.image_url:
+        try:
+            parsed = urlparse(task_data.image_url)
+            if parsed.scheme not in ('http', 'https'):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="image_url必须使用http或https协议"
+                )
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="image_url格式无效"
+            )
     
     # 2. 检查余额
     is_valid, error_msg = validate_balance(
@@ -80,8 +96,12 @@ async def create_generation_task(
     
     # 4. 计算Token消耗
     token_cost = calculate_cost_tokens(task_data.duration, task_data.quality_mode)
-    
-    # 5. 创建任务
+
+    # 5. 预留Token（立即扣除，但如果任务失败/取消会退款）
+    current_user.token_balance -= token_cost
+    await session.commit()
+
+    # 6. 创建任务
     task = GenerationTask(
         id=str(uuid.uuid4()),
         user_id=current_user.id,
@@ -99,7 +119,7 @@ async def create_generation_task(
     await session.commit()
     await session.refresh(task)
     
-    # 6. 提交到Celery (异步执行)
+    # 7. 提交到Celery (异步执行)
     submit_generation_task(task.id)
     
     # 7. 返回预估时间
@@ -212,7 +232,13 @@ async def cancel_generation_task(
     
     **限制**: 仅当任务状态为 queued 或 pending 时可取消
     
-    **返回**: 确认消息
+    **处理流程**:
+    1. 检查任务是否存在
+    2. 检查任务状态是否可取消
+    3. 退还Token到用户余额
+    4. 更新任务状态为 cancelled
+    
+    **返回**: 确认消息和退款金额
     """
     result = await session.execute(
         select(GenerationTask).where(
@@ -234,7 +260,26 @@ async def cancel_generation_task(
             detail=f"Cannot cancel task with status '{task.status}'. Only queued or pending tasks can be cancelled."
         )
 
+    # ===== 退还Token到用户余额 =====
+    refund_tokens = task.token_cost or 0
+    if refund_tokens > 0:
+        # 重新获取用户（避免缓存问题）
+        user_result = await session.execute(
+            select(User).where(User.id == current_user.id)
+        )
+        user = user_result.scalar_one_or_none()
+        
+        if user:
+            user.token_balance += refund_tokens
+            print(f"[Cancel Task] Refunded {refund_tokens} tokens to user {user.id}. New balance: {user.token_balance}")
+    
+    # 更新任务状态
     task.status = "cancelled"
     await session.commit()
 
-    return {"message": "Task cancelled", "task_id": task_id}
+    return {
+        "message": "Task cancelled successfully",
+        "task_id": task_id,
+        "refund_tokens": refund_tokens,
+        "current_balance": user.token_balance if refund_tokens > 0 else None
+    }

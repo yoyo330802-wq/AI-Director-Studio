@@ -26,13 +26,24 @@ class Settings(BaseSettings):
     REDIS_CACHE_TTL_SHORT: int = int(os.getenv("REDIS_CACHE_TTL_SHORT", "60"))       # 1分钟
     REDIS_CACHE_TTL_LONG: int = int(os.getenv("REDIS_CACHE_TTL_LONG", "3600"))      # 1小时
     
-    # 安全
-    SECRET_KEY: str = os.getenv(
-        "SECRET_KEY", 
-        "manai-secret-key-change-in-production-2026"
-    )
+    # 安全 - 生产环境必须设置环境变量
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7天
+    
+    # 验证 SECRET_KEY 是否已设置
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.SECRET_KEY:
+            import warnings
+            warnings.warn(
+                "WARNING: SECRET_KEY is not set! "
+                "Please set the SECRET_KEY environment variable for production. "
+                "Using a default key is insecure and should only be used for development.",
+                RuntimeWarning
+            )
+            # 开发环境使用临时key，但打印警告
+            self.SECRET_KEY = "dev-secret-key-" + os.urandom(16).hex()
     
     # 上游API配置
     SILICONFLOW_API_KEY: str = os.getenv("SILICONFLOW_API_KEY", "")

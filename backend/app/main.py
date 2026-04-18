@@ -14,6 +14,7 @@ from app.api.payment import router as payment_router
 from app.api.billing import router as billing_router
 from app.api.moderation import router as moderation_router
 from app.api.packages import router as packages_router
+from app.api.hermes import router as hermes_router
 from app.services.cache import cache_service
 
 
@@ -62,6 +63,7 @@ app.include_router(payment_router, prefix="/api/v1/payment")
 app.include_router(billing_router)  # Sprint 6: S6-1 按需计费API
 app.include_router(moderation_router)
 app.include_router(packages_router)  # Sprint 5: S5-F3 套餐API
+app.include_router(hermes_router)  # Hermes多Agent协作编排
 
 
 @app.get("/api/v1/health")

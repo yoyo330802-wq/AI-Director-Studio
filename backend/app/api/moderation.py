@@ -117,11 +117,12 @@ async def batch_check_content(
 @router.get("/terms")
 async def get_moderation_terms():
     """
-    获取敏感词列表（仅管理员）
-    
-    返回当前审核使用的敏感词分类。
+    获取审核服务状态信息
+
+    返回审核服务是否启用等基本信息。
+    注意：敏感词列表不对外暴露，以防止攻击者利用。
     """
     return {
-        "prohibited": list(content_moderation_service.PROHIBITED_TERMS),
-        "warning": list(content_moderation_service.WARNING_TERMS),
+        "enabled": content_moderation_service.enabled,
+        "check_count": len(content_moderation_service.PROHIBITED_TERMS) + len(content_moderation_service.WARNING_TERMS),
     }

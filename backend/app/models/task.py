@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
 from sqlmodel import SQLModel, Field
 
 

@@ -95,8 +95,8 @@ class Wan21Client:
             headers["Authorization"] = f"Bearer {self.api_key}"
         
         async with httpx.AsyncClient() as client:
-            start_time = asyncio.get_event_loop().time()
-            
+            start_time = time.time()
+
             try:
                 response = await client.post(
                     self._get_endpoint(),
@@ -106,8 +106,8 @@ class Wan21Client:
                 )
                 response.raise_for_status()
                 result = response.json()
-                
-                generation_time = asyncio.get_event_loop().time() - start_time
+
+                generation_time = time.time() - start_time
                 
                 return {
                     "task_id": result.get("task_id", result.get("id")),
