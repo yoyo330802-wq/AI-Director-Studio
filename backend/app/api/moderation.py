@@ -39,7 +39,16 @@ class ModerationBatchRequest(BaseModel):
     prompts: List[str]
 
 
-@router.post("/check", response_model=ModerationCheckResponse)
+@router.post(
+    "/check",
+    response_model=ModerationCheckResponse,
+    summary="内容审核",
+    description="检查提示词是否包含违规内容，支持图文审核",
+    responses={
+        200: {"description": "审核完成"},
+        401: {"description": "未授权"},
+    }
+)
 async def check_content(
     request: ModerationCheckRequest,
     current_user: User = Depends(get_current_user),
@@ -47,7 +56,17 @@ async def check_content(
     """
     审核提示词内容
     
-    检查输入的提示词是否包含违规内容，返回审核结果。
+    **审核级别**:
+    - SAFE: 内容安全，可直接使用
+    - WARNING: 包含警告内容，建议修改
+    - BLOCK: 包含违规内容，拒绝使用
+    
+    **返回内容**:
+    - passed: 是否通过审核
+    - level: 审核级别
+    - reason: 审核原因
+    - flagged_terms: 命中的敏感词列表
+    - score: 风险评分 (0-1)
     """
     result = content_moderation_service.check_prompt(
         request.prompt,
@@ -63,7 +82,14 @@ async def check_content(
     )
 
 
-@router.post("/check-simple")
+@router.post(
+    "/check-simple",
+    summary="简单内容审核（无需认证）",
+    description="用于前端实时预览时快速检查提示词，无需登录",
+    responses={
+        200: {"description": "审核结果"},
+    }
+)
 async def check_content_simple(
     prompt: str,
     negative_prompt: Optional[str] = None,
@@ -72,6 +98,7 @@ async def check_content_simple(
     简单审核接口（无需认证）
     
     用于前端实时预览时快速检查。
+    此接口不需要 Authorization header，适合在用户输入时实时检测。
     """
     result = content_moderation_service.check_prompt(prompt, negative_prompt)
     

@@ -1,5 +1,58 @@
 # 漫AI - 变更日志
 
+## v0.7.0 (2026-04-19)
+
+### Sprint S10 OpenAPI文档完善 + 前端API Docs动态化
+
+**评分**: N/A
+**决策数**: 0
+**发现问题**: 0
+
+### 功能实现
+
+#### S10-F1: 前端API Docs动态化 ✅
+- **新文件**: `frontend/app/api-docs/page.tsx`
+- 从OpenAPI Schema动态加载API端点
+- 自动解析paths生成端点列表
+- 支持按标签/名称/路径搜索过滤
+- 展示请求参数、请求体、响应格式
+- 自动生成curl命令示例，支持一键复制
+- 在线调试功能
+
+#### S10-F2: SDK文档页 ✅
+- **新文件**: `frontend/app/sdk-docs/page.tsx`
+- 快速开始指南
+- 认证流程四步图解
+- 多语言代码示例（curl/Python/JavaScript）
+- 错误码参考表（8个常见错误）
+- 认证说明和限流说明
+
+#### S10-F3: 后端OpenAPI Schema完善 ✅
+- `backend/app/api/billing.py` - 添加summary、description、responses
+- `backend/app/api/packages.py` - 添加summary、description、responses
+- `backend/app/api/moderation.py` - 添加summary、description、responses
+
+#### S10-F4: 前端代理配置更新 ✅
+- `frontend/next.config.js` - 添加 /openapi.json 和 /docs 代理
+
+### 文件变更
+```
+新增文件:
+frontend/app/api-docs/page.tsx      # API文档页（动态化）
+frontend/app/sdk-docs/page.tsx      # SDK文档页
+gan-harness/sprint-plan/sprint10-spec.md
+gan-harness/sprint-plan/sprint10-contract.md
+
+修改文件:
+frontend/app/api-docs/page.tsx      # 重写为动态版本
+frontend/next.config.js            # 添加OpenAPI代理
+backend/app/api/billing.py         # OpenAPI文档完善
+backend/app/api/packages.py        # OpenAPI文档完善
+backend/app/api/moderation.py      # OpenAPI文档完善
+```
+
+---
+
 ## v0.6.0 (2026-04-19)
 
 ### Sprint S9 飞书机器人集成 + E2E测试

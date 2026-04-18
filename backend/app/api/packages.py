@@ -16,46 +16,109 @@ from app.core.security import get_current_user
 router = APIRouter(prefix="/api/v1/packages", tags=["packages"])
 
 
-@router.get("", response_model=List[PackageResponse])
+@router.get(
+    "",
+    response_model=List[PackageResponse],
+    summary="获取套餐列表",
+    description="获取所有可用的订阅套餐",
+    responses={
+        200: {"description": "套餐列表"},
+        401: {"description": "未授权"},
+    }
+)
 async def list_packages(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """获取所有可用套餐"""
+    """
+    获取所有可用套餐列表。
+    
+    **套餐类型**:
+    - L1_TRIAL: 体验版
+    - L2_CREATOR: 创作者月卡
+    - L3_STUDIO: 工作室季卡
+    - L4_ENTERPRISE: 企业年卡
+    """
     packages = await package_service.get_all_packages(db)
     return packages
 
 
-@router.get("/recommended", response_model=List[PackageResponse])
+@router.get(
+    "/recommended",
+    response_model=List[PackageResponse],
+    summary="获取推荐套餐",
+    description="获取标记为推荐的套餐列表",
+    responses={
+        200: {"description": "推荐套餐列表"},
+        401: {"description": "未授权"},
+    }
+)
 async def get_recommended_packages(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """获取推荐套餐"""
+    """
+    获取推荐套餐。
+    
+    推荐套餐是平台主推的套餐，通常具有较好的性价比。
+    """
     packages = await package_service.get_all_packages(db)
     return [p for p in packages if p.get("is_recommended", False)]
 
 
-@router.get("/{package_id}", response_model=PackageResponse)
+@router.get(
+    "/{package_id}",
+    response_model=PackageResponse,
+    summary="获取套餐详情",
+    description="根据ID获取单个套餐的详细信息",
+    responses={
+        200: {"description": "套餐详情"},
+        401: {"description": "未授权"},
+        404: {"description": "套餐不存在"},
+    }
+)
 async def get_package(
     package_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """获取单个套餐详情"""
+    """
+    获取单个套餐详情。
+    
+    **返回内容**:
+    - id: 套餐ID
+    - name: 套餐名称
+    - price: 价格（元）
+    - video_minutes: 包含视频分钟数
+    - duration_days: 有效期（天）
+    - features: 功能列表
+    """
     package = await package_service.get_package_by_id(db, package_id)
     if not package:
         raise HTTPException(status_code=404, detail="套餐不存在")
     return package
 
 
-@router.get("/level/{level}", response_model=List[PackageResponse])
+@router.get(
+    "/level/{level}",
+    response_model=List[PackageResponse],
+    summary="按等级获取套餐",
+    description="根据用户等级获取对应的套餐列表",
+    responses={
+        200: {"description": "套餐列表"},
+        401: {"description": "未授权"},
+    }
+)
 async def get_packages_by_level(
     level: UserLevelEnum,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """根据用户等级获取对应套餐"""
+    """
+    根据用户等级获取对应套餐。
+    
+    不同等级用户可购买不同级别的套餐。
+    """
     level_enum = UserLevel[level.name]
     packages = await package_service.get_package_by_level(db, level_enum)
     return packages

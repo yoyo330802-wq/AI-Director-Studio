@@ -16,12 +16,29 @@ from app.core.security import get_current_user
 router = APIRouter(prefix="/api/v1/bill", tags=["billing"])
 
 
-@router.get("/balance", response_model=BalanceResponse)
+@router.get(
+    "/balance",
+    response_model=BalanceResponse,
+    summary="获取账户余额",
+    description="获取当前用户的账户余额、视频配额使用情况",
+    responses={
+        200: {"description": "余额信息获取成功"},
+        401: {"description": "未授权，需要登录"},
+    }
+)
 def get_balance(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """获取余额"""
+    """
+    获取当前登录用户的账户余额和视频配额信息。
+    
+    **返回内容**:
+    - balance: 账户余额（元）
+    - video_quota: 视频配额（秒）
+    - video_used: 已使用配额（秒）
+    - video_remaining: 剩余配额（秒）
+    """
     return BalanceResponse(
         balance=current_user.balance or 0.0,
         video_quota=current_user.video_quota or 0,
@@ -30,13 +47,35 @@ def get_balance(
     )
 
 
-@router.post("/recharge", response_model=RechargeResponse)
+@router.post(
+    "/recharge",
+    response_model=RechargeResponse,
+    summary="账户充值",
+    description="为账户余额充值，支持支付宝和微信支付",
+    responses={
+        200: {"description": "充值成功"},
+        401: {"description": "未授权"},
+    }
+)
 def recharge(
     request: RechargeRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """充值 - 直接到账"""
+    """
+    为当前账户充值。
+    
+    **充值方式**:
+    - alipay: 支付宝
+    - wechat: 微信支付
+    - balance: 余额支付（需有足够余额）
+    
+    **返回内容**:
+    - order_id: 订单ID
+    - order_no: 订单号
+    - qr_code: 支付二维码（扫码支付）
+    - expired_at: 支付过期时间
+    """
     # 创建充值订单
     order_no = f"R{datetime.now().strftime('%Y%m%d%H%M%S')}{str(current_user.id)[-4:].upper()}"
     
