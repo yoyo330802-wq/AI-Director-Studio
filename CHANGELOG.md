@@ -1,5 +1,46 @@
 # 漫AI - 变更日志
 
+## v0.5.0 (2026-04-18)
+
+### Sprint S7 Hermes API 集成
+
+**评分**: N/A
+**决策数**: 0
+**发现问题**: 3 (已记录在 sprint7-code-review.md)
+
+### 功能实现
+- **Hermes 多Agent编排**: POST /api/v1/hermes/tasks 提交任务
+  - 支持 engineer/researcher/creator 三种 Agent 类型
+  - Engineering 任务走 GAN Phase 0-8 流程
+- **WebSocket 实时推送**: /api/v1/hermes/events/{task_id}
+  - Phase 0-8 进度实时推送
+  - 心跳保活机制
+- **GAN Runner 集成**: 完整 GAN 工作流执行
+- **Evolution Engine**: 执行日志与优化建议
+
+### Phase 4 安全修复 (P0 Critical)
+- **user_id 数据隔离**: HermesTask 添加 user_id 字段
+  - 所有查询按用户过滤
+  - 跨用户访问返回 404/403
+- **task_id 响应修复**: HermesTaskResponse 使用 `id` 而非 `task_id`
+- **认证覆盖**: /stats 和 /agents 端点添加 JWT 认证
+
+### 文件变更
+```
+新增文件:
+backend/app/hermes/models.py          # HermesTask, HermesTaskResponse
+backend/app/hermes/state.py          # HermesStateManager 状态管理
+backend/app/hermes/router.py          # 任务路由
+backend/app/hermes/gan_runner.py      # GAN Runner
+backend/app/hermes/executor.py        # Agent Executor
+backend/app/hermes/evolution.py       # Evolution Engine
+
+修改文件:
+backend/app/api/hermes.py             # REST + WebSocket API
+```
+
+---
+
 ## v0.4.0 (2026-04-18)
 
 ### Sprint S1 完成

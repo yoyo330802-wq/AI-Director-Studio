@@ -116,10 +116,37 @@ PRD 要求视频存储到 MinIO/OSS，但代码无相关实现。
 
 ## 当前 Sprint 状态
 
-| Sprint | 状态 | 评分 |
+|| Sprint | 状态 | 评分 |
 |--------|------|------|
-| S1 视频生成API | ✅ 完成 | 9.05/10 |
-| S2 支付闭环 | 🔄 进行中 | - |
-| S3 前端体验 | ⏳ 待开始 | - |
-| S4 运营增强 | ⏳ 待开始 | - |
-| S5 性能商业化 | ⏳ 待开始 | - |
+|| S1 视频生成API | ✅ 完成 | 9.05/10 |
+|| S2 支付闭环 | 🔄 进行中 | - |
+|| S3 前端体验 | ⏳ 待开始 | - |
+|| S4 运营增强 | ⏳ 待开始 | - |
+|| S5 性能商业化 | ⏳ 待开始 | - |
+|| S7 Hermes API | ✅ 完成 | - |
+
+### Sprint S7 - Hermes API 集成 (2026-04-18)
+
+**功能**:
+- POST /api/v1/hermes/tasks 提交任务 (engineer/researcher/creator)
+- WebSocket /api/v1/hermes/events/{task_id} 实时推送 Phase 0-8 进度
+- GAN Runner 完整工作流集成
+- Evolution Engine 执行日志与优化建议
+
+**Phase 4 修复 (P0 Critical)**:
+- user_id 数据隔离: HermesTask 添加 user_id，所有查询按用户过滤
+- task_id 响应修复: HermesTaskResponse 使用 `id` 而非 `task_id`
+- 认证覆盖: /stats 和 /agents 端点添加 JWT 认证
+
+**代码审查**: 
+- 状态: 🟡 有条件通过
+- 问题: 3 个 (1 Medium, 2 Low) - 见 sprint7-code-review.md
+
+**相关文件**:
+- `backend/app/hermes/models.py`
+- `backend/app/hermes/state.py`
+- `backend/app/hermes/router.py`
+- `backend/app/hermes/gan_runner.py`
+- `backend/app/hermes/executor.py`
+- `backend/app/hermes/evolution.py`
+- `backend/app/api/hermes.py`
