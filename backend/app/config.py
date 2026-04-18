@@ -103,6 +103,11 @@ class Settings(BaseSettings):
     SEO_SITEMAP_URL: str = os.getenv("SEO_SITEMAP_URL", "https://manai.com/sitemap.xml")
     SEO_ROBOTS_TXT_URL: str = os.getenv("SEO_ROBOTS_TXT_URL", "https://manai.com/robots.txt")
 
+    # 飞书机器人配置 (Sprint 9: S9-F1)
+    FEISHU_APP_ID: str = os.getenv("FEISHU_APP_ID", "cli_a92ee0821db8dcc4")
+    FEISHU_APP_SECRET: str = os.getenv("FEISHU_APP_SECRET", "q6nCESAMiE12vi8feEubth50FLPciC1I")
+    FEISHU_VERIFICATION_TOKEN: str = os.getenv("FEISHU_VERIFICATION_TOKEN", "")
+
     # CORS
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000", 

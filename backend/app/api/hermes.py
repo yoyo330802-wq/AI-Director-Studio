@@ -343,12 +343,27 @@ async def cancel_hermes_task(
 async def hermes_websocket_events(
     websocket: WebSocket,
     task_id: str,
-    token: str = Query(...),
+    token: Optional[str] = Query(None),
 ):
     """WebSocket实时事件流
 
-    连接: ws://localhost:8000/api/v1/hermes/events/{task_id}?token={jwt}
+    连接 (新版 - 推荐):
+        ws://localhost:8000/api/v1/hermes/events/{task_id}
+        Header: Authorization: Bearer <jwt>
+
+    连接 (兼容旧版):
+        ws://localhost:8000/api/v1/hermes/events/{task_id}?token={jwt}
     """
+    # 优先从 header 获取 token (Sprint 9: S9-F4 JWT 优化)
+    auth_header = websocket.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+
+    # Fallback 到 query param (向后兼容)
+    if not token:
+        await websocket.close(code=4001, reason="Missing token")
+        return
+
     # 验证token
     user_id = decode_token(token)
     if user_id is None:

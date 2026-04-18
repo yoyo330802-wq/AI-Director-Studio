@@ -1,5 +1,62 @@
 # 漫AI - 变更日志
 
+## v0.6.0 (2026-04-19)
+
+### Sprint S9 飞书机器人集成 + E2E测试
+
+**评分**: N/A
+**决策数**: 0
+**发现问题**: 1 (已修复)
+
+### 功能实现
+
+#### S9-F1: 飞书机器人 Webhook 集成 ✅
+- **新文件**: `backend/app/api/feishu_bot.py`
+- `POST /api/v1/feishu/webhook` - 接收飞书事件
+- 飞书签名验证 (HMAC-SHA256)
+- 卡片消息发送 (Interactive Card)
+- `GET /api/v1/feishu/card_preview` - 卡片预览
+- `POST /api/v1/feishu/send_test_card` - 测试卡片发送
+- **修复**: line 29 语法错误
+
+#### S9-F2: 端到端 API 测试自动化 ✅
+- **新文件**: `backend/tests/hermes_e2e_test.py`
+- 测试用例: 注册/登录/创建任务/WebSocket/用户隔离
+- `pytest tests/hermes_e2e_test.py -v` 运行
+
+#### S9-F3: 飞书机器人接入漫AI工作流 ✅
+- 消息处理 → Hermes 任务创建 → WebSocket 进度 → 飞书卡片回复
+- `_process_user_message()` - 处理用户消息
+- `_monitor_and_notify()` - 监控进度并发送通知
+
+#### S9-F4: WebSocket JWT 优化 ✅
+- **修改**: `backend/app/api/hermes.py`
+- 优先从 `Authorization` header 获取 token
+- 向后兼容 query param 方式
+- 更新文档注释
+
+#### 配置更新
+- `backend/app/config.py` - 添加飞书配置
+
+### 文件变更
+```
+新增文件:
+backend/app/api/feishu_bot.py      # 飞书机器人 Webhook
+backend/tests/hermes_e2e_test.py   # E2E 测试套件
+
+修改文件:
+backend/app/api/hermes.py          # WebSocket JWT 优化
+backend/app/config.py              # 飞书配置
+backend/app/main.py                # 注册 feishu_router
+
+新增文档:
+gan-harness/sprint-plan/sprint9-spec.md
+gan-harness/sprint-plan/sprint9-contract.md
+gan-harness/sprint-plan/sprint9-progress.md
+```
+
+---
+
 ## v0.5.0 (2026-04-19)
 
 ### Sprint S1 完成

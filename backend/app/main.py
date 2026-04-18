@@ -15,6 +15,7 @@ from app.api.billing import router as billing_router
 from app.api.moderation import router as moderation_router
 from app.api.packages import router as packages_router
 from app.api.hermes import router as hermes_router
+from app.api.feishu_bot import router as feishu_router
 from app.services.cache import cache_service
 
 
@@ -64,6 +65,7 @@ app.include_router(billing_router)  # Sprint 6: S6-1 按需计费API
 app.include_router(moderation_router)
 app.include_router(packages_router)  # Sprint 5: S5-F3 套餐API
 app.include_router(hermes_router)  # Hermes多Agent协作编排
+app.include_router(feishu_router)  # 飞书机器人 (Sprint 9)
 
 
 @app.get("/api/v1/health")
