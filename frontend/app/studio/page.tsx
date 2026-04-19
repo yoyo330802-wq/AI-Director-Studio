@@ -191,36 +191,44 @@ export default function StudioPage() {
   }, [currentTask, setCurrentTask])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* 顶部导航 */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+    <div className="min-h-screen relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a0a2e 0%, #16213e 50%, #0f3460 100%)' }}>
+      {/* 装饰性渐变光晕 - 左上粉色 */}
+      <div className="absolute top-0 left-0 w-96 h-96 rounded-full opacity-40 blur-3xl" style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }} />
+      {/* 装饰性渐变光晕 - 右下紫色 */}
+      <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full opacity-30 blur-3xl" style={{ background: 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)', transform: 'translate(30%, 30%)' }} />
+      {/* 装饰性渐变光晕 - 中间青色 */}
+      <div className="absolute top-1/2 left-1/2 w-64 h-64 rounded-full opacity-20 blur-3xl" style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(-50%, -50%)' }} />
+      
+      {/* 顶部导航 - 深色毛玻璃风格 */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl border-b" style={{ background: 'rgba(26, 10, 46, 0.7)', borderColor: 'rgba(139, 92, 246, 0.3)' }}>
+        <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">
-                🎬 漫AI创作工作室
+              <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #ec4899, #8b5cf6)' }}>
+                ✨ 漫AI创作工作室
               </span>
             </h1>
-            <p className="text-sm text-gray-500">AI驱动，创意无限</p>
+            <p className="text-sm" style={{ color: '#a78bfa' }}>AI驱动，创意无限</p>
           </div>
           
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <>
-                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
-                  <span className="text-sm text-gray-600">账户余额</span>
-                  <span className="text-xl font-bold text-green-600">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/80 backdrop-blur border border-pink-100 shadow-sm">
+                  <span className="text-sm" style={{ color: '#a78bfa' }}>账户余额</span>
+                  <span className="text-xl font-bold" style={{ color: '#ec4899' }}>
                     {user?.token_balance?.toFixed(2) || '0.00'}
                   </span>
                 </div>
-                <button className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
+                <button className="px-4 py-2 text-sm rounded-xl hover:bg-white/50 transition-all" style={{ color: '#7c3aed' }}>
                   个人中心
                 </button>
               </>
             ) : (
               <button 
                 onClick={() => {/* 登录 */}}
-                className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-full hover:shadow-lg transition-all"
+                className="px-6 py-2 text-white font-medium rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                style={{ background: 'linear-gradient(135deg, #ec4899, #8b5cf6)' }}
               >
                 登录 / 注册
               </button>
@@ -229,10 +237,10 @@ export default function StudioPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-5xl mx-auto px-6 py-8 relative z-10">
         {/* 模式选择 */}
         <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 text-gray-800">🎯 选择生成模式</h2>
+          <h2 className="text-lg font-semibold mb-4" style={{ color: '#e9d5ff' }}>🎯 选择生成模式</h2>
           <div className="grid grid-cols-3 gap-6">
             {(Object.keys(MODES) as ModeId[]).map((modeId) => {
               const m = MODES[modeId]
@@ -241,20 +249,25 @@ export default function StudioPage() {
                 <motion.button
                   key={modeId}
                   onClick={() => setMode(modeId)}
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, y: -4 }}
                   whileTap={{ scale: 0.98 }}
                   className={cn(
-                    'relative p-6 rounded-2xl border-2 transition-all',
+                    'relative p-6 rounded-2xl transition-all backdrop-blur',
                     mode === modeId 
-                      ? `${m.borderColor} shadow-lg bg-white` 
-                      : 'border-gray-200 bg-white hover:border-gray-300'
+                      ? `${m.borderColor} shadow-xl` 
+                      : 'border border-white/10 bg-white/5 hover:bg-white/10'
                   )}
+                  style={{ 
+                    background: mode === modeId ? 'rgba(139, 92, 246, 0.3)' : 'rgba(255,255,255,0.05)',
+                    boxShadow: mode === modeId ? '0 20px 40px -12px rgba(139, 92, 246, 0.4)' : 'none',
+                    borderColor: mode === modeId ? m.borderColor.replace('border-', '') : 'rgba(255,255,255,0.1)'
+                  }}
                 >
                   {mode === modeId && (
                     <motion.div
                       layoutId="mode-indicator"
                       className={cn(
-                        'absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-white',
+                        'absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center text-white shadow-lg',
                         `bg-gradient-to-br ${m.color}`
                       )}
                     >
@@ -263,22 +276,19 @@ export default function StudioPage() {
                   )}
                   
                   <div className={cn(
-                    'inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4',
+                    'inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4 shadow-lg',
                     `bg-gradient-to-br ${m.color}`
                   )}>
-                    <Icon className="w-6 h-6 text-white" />
+                    <Icon className="w-7 h-7 text-white" />
                   </div>
                   
-                  <h3 className="text-lg font-bold mb-1">{m.label}</h3>
-                  <p className="text-sm text-gray-500 mb-2">{m.model}</p>
-                  <p className="text-xs text-gray-400 mb-3">{m.description}</p>
+                  <h3 className="text-lg font-bold mb-1 text-white">{m.label}</h3>
+                  <p className="text-sm mb-2" style={{ color: '#c4b5fd' }}>{m.model}</p>
+                  <p className="text-xs mb-3" style={{ color: '#94a3b8' }}>{m.description}</p>
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">{m.speed}</span>
-                    <span className={cn(
-                      'font-bold',
-                      mode === modeId ? 'text-purple-600' : 'text-gray-600'
-                    )}>
+                    <span className="text-sm" style={{ color: '#a78bfa' }}>{m.speed}</span>
+                    <span style={{ color: mode === modeId ? '#f472b6' : '#a78bfa' }} className="font-bold">
                       ¥{m.price}/秒
                     </span>
                   </div>
@@ -292,28 +302,38 @@ export default function StudioPage() {
         <div className="grid grid-cols-3 gap-8">
           {/* 左侧：输入区 */}
           <div className="col-span-2 space-y-6">
-            <div className="bg-white rounded-2xl shadow-lg p-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-3xl p-8 border"
+              style={{ background: 'rgba(30, 20, 60, 0.8)', borderColor: 'rgba(139, 92, 246, 0.3)' }}
+            >
               {/* 提示词输入 */}
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold mb-2 text-white">
                   ✍️ 描述你的场景
                 </label>
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="例如：一位银发少女在樱花树下跳舞，镜头缓慢旋转，花瓣飘落，夕阳温暖的光线，动漫风格"
-                  className="w-full h-32 p-4 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all resize-none"
+                  className="w-full h-32 p-4 rounded-2xl border-2 transition-all resize-none focus:outline-none"
+                  style={{ 
+                    borderColor: 'rgba(139, 92, 246, 0.5)',
+                    background: 'rgba(15, 10, 40, 0.8)',
+                    color: '#e9d5ff',
+                  }}
                   maxLength={500}
                 />
                 <div className="flex justify-between mt-2 text-sm">
-                  <span className="text-gray-500">💡 详细描述获得更好效果</span>
-                  <span className="text-gray-400">{prompt.length}/500</span>
+                  <span style={{ color: '#a78bfa' }}>💡 详细描述获得更好效果</span>
+                  <span style={{ color: '#7c3aed' }}>{prompt.length}/500</span>
                 </div>
               </div>
 
               {/* 负向提示词 */}
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold mb-2 text-white">
                   🚫 不想要的内容（可选）
                 </label>
                 <input
@@ -321,7 +341,12 @@ export default function StudioPage() {
                   value={negativePrompt}
                   onChange={(e) => setNegativePrompt(e.target.value)}
                   placeholder="低质量, 模糊, 变形, 文字, 水印"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
+                  className="w-full px-4 py-3 rounded-2xl border-2 transition-all focus:outline-none"
+                  style={{ 
+                    borderColor: 'rgba(139, 92, 246, 0.5)',
+                    background: 'rgba(15, 10, 40, 0.8)',
+                    color: '#e9d5ff',
+                  }}
                 />
               </div>
 
@@ -329,7 +354,7 @@ export default function StudioPage() {
               <div className="grid grid-cols-2 gap-6 mb-6">
                 {/* 时长 */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold mb-2 text-white">
                     ⏱️ 视频时长
                   </label>
                   <div className="flex gap-3">
@@ -338,11 +363,12 @@ export default function StudioPage() {
                         key={d}
                         onClick={() => setDuration(d)}
                         className={cn(
-                          'flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-all',
-                          duration === d
-                            ? 'border-purple-500 bg-purple-50 text-purple-700'
-                            : 'border-gray-200 hover:border-gray-300'
+                          'flex-1 py-3 px-4 rounded-2xl font-semibold transition-all',
                         )}
+                        style={duration === d
+                          ? { background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', color: 'white', boxShadow: '0 4px 20px rgba(236, 72, 153, 0.4)' }
+                          : { background: 'rgba(255,255,255,0.05)', border: '2px solid rgba(139, 92, 246, 0.3)', color: '#c4b5fd' }
+                        }
                       >
                         {d}秒
                       </button>
@@ -352,7 +378,7 @@ export default function StudioPage() {
 
                 {/* 宽高比 */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold mb-2 text-white">
                     📐 宽高比
                   </label>
                   <div className="flex gap-3">
@@ -365,11 +391,12 @@ export default function StudioPage() {
                         key={ratio.value}
                         onClick={() => setAspectRatio(ratio.value)}
                         className={cn(
-                          'flex-1 py-2 px-2 rounded-lg border-2 font-semibold transition-all text-sm',
-                          aspectRatio === ratio.value
-                            ? 'border-purple-500 bg-purple-50 text-purple-700'
-                            : 'border-gray-200 hover:border-gray-300'
+                          'flex-1 py-2 px-2 rounded-2xl font-semibold transition-all text-sm',
                         )}
+                        style={aspectRatio === ratio.value
+                          ? { background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', color: 'white', boxShadow: '0 4px 20px rgba(236, 72, 153, 0.4)' }
+                          : { background: 'rgba(255,255,255,0.05)', border: '2px solid rgba(139, 92, 246, 0.3)', color: '#c4b5fd' }
+                        }
                       >
                         <div>{ratio.icon}</div>
                         <div>{ratio.label}</div>
@@ -381,11 +408,11 @@ export default function StudioPage() {
 
               {/* 参考图上传 */}
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold mb-2 text-white">
                   🖼️ 参考图片（可选）
                 </label>
                 {referencePreview ? (
-                  <div className="relative rounded-xl overflow-hidden border-2 border-purple-200">
+                  <div className="relative rounded-2xl overflow-hidden border-2" style={{ borderColor: 'rgba(139, 92, 246, 0.5)' }}>
                     <img
                       src={referencePreview}
                       alt="参考图"
@@ -393,22 +420,24 @@ export default function StudioPage() {
                     />
                     <button
                       onClick={clearReferenceImage}
-                      className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      className="absolute top-2 right-2 p-2 text-white rounded-full shadow-lg transition-transform hover:scale-110"
+                      style={{ background: 'linear-gradient(135deg, #ec4899, #8b5cf6)' }}
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 ) : (
-                  <label className="block border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                  <label className="block border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer hover:bg-purple-900/20"
+                    style={{ borderColor: 'rgba(139, 92, 246, 0.5)', background: 'rgba(15, 10, 40, 0.5)' }}>
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleImageUpload}
                       className="hidden"
                     />
-                    <ImageIcon className="w-10 h-10 mx-auto mb-2 text-gray-400" />
-                    <p className="text-gray-600">点击上传参考图片</p>
-                    <p className="text-sm text-gray-400 mt-1">支持 JPG, PNG, WebP</p>
+                    <ImageIcon className="w-10 h-10 mx-auto mb-2" style={{ color: '#7c3aed' }} />
+                    <p style={{ color: '#c4b5fd' }}>点击上传参考图片</p>
+                    <p className="text-sm mt-1" style={{ color: '#7c3aed' }}>支持 JPG, PNG, WebP</p>
                   </label>
                 )}
               </div>
@@ -417,10 +446,10 @@ export default function StudioPage() {
               <motion.button
                 onClick={handleSubmit}
                 disabled={!prompt.trim() || isGenerating || generateMutation.isPending}
-                whileHover={{ scale: 1.01 }}
+                whileHover={{ scale: 1.01, y: -2 }}
                 whileTap={{ scale: 0.99 }}
                 className={cn(
-                  'w-full py-4 rounded-xl font-bold text-lg text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2',
+                  'w-full py-4 rounded-2xl font-bold text-lg text-white shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2',
                   `bg-gradient-to-r ${MODES[mode].color}`,
                   (!prompt.trim() || isGenerating) && 'opacity-50 cursor-not-allowed'
                 )}
@@ -444,22 +473,22 @@ export default function StudioPage() {
 
               {/* 预估信息 */}
               {routePreview && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div className="mt-4 p-4 rounded-2xl" style={{ background: 'rgba(139, 92, 246, 0.2)', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">路由策略：</span>
-                    <span className="font-semibold">{routePreview.channel_name}</span>
+                    <span style={{ color: '#a78bfa' }}>路由策略：</span>
+                    <span className="font-semibold text-white">{routePreview.channel_name}</span>
                   </div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">预计等待：</span>
-                    <span className="font-semibold">~{routePreview.estimated_time}秒</span>
+                    <span style={{ color: '#a78bfa' }}>预计等待：</span>
+                    <span className="font-semibold text-white">~{routePreview.estimated_time}秒</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">质量评分：</span>
-                    <span className="font-semibold">{routePreview.quality_score}/10</span>
+                    <span style={{ color: '#a78bfa' }}>质量评分：</span>
+                    <span className="font-semibold text-white">{routePreview.quality_score}/10</span>
                   </div>
                 </div>
               )}
-            </div>
+            </motion.div>
           </div>
 
           {/* 右侧：状态与历史 */}
@@ -471,30 +500,36 @@ export default function StudioPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="bg-white rounded-2xl shadow-lg p-6"
+                  className="rounded-3xl p-6 border"
+                  style={{ background: 'rgba(30, 20, 60, 0.8)', borderColor: 'rgba(139, 92, 246, 0.3)' }}
                 >
-                  <h3 className="font-bold mb-4 flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-purple-500" />
+                  <h3 className="font-bold mb-4 flex items-center gap-2 text-white">
+                    <Clock className="w-5 h-5" style={{ color: '#ec4899' }} />
                     当前任务
                   </h3>
                   
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-500">任务ID</span>
-                      <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                      <span className="text-sm" style={{ color: '#a78bfa' }}>任务ID</span>
+                      <span className="text-xs font-mono px-2 py-1 rounded-xl" style={{ background: 'rgba(139, 92, 246, 0.3)', color: '#c4b5fd' }}>
                         {currentTask.task_id.slice(0, 8)}...
                       </span>
                     </div>
                     
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-500">状态</span>
+                      <span className="text-sm" style={{ color: '#a78bfa' }}>状态</span>
                       <span className={cn(
                         'px-3 py-1 rounded-full text-sm font-medium',
-                        currentTask.status === 'completed' && 'bg-green-100 text-green-700',
-                        currentTask.status === 'processing' && 'bg-blue-100 text-blue-700',
-                        currentTask.status === 'pending' && 'bg-yellow-100 text-yellow-700',
-                        currentTask.status === 'failed' && 'bg-red-100 text-red-700',
-                      )}>
+                        currentTask.status === 'completed' && 'text-white',
+                        currentTask.status === 'processing' && 'text-white',
+                        currentTask.status === 'pending' && 'text-white',
+                        currentTask.status === 'failed' && 'text-white',
+                      )} style={
+                        currentTask.status === 'completed' ? { background: 'linear-gradient(135deg, #10b981, #059669)' } :
+                        currentTask.status === 'processing' ? { background: 'linear-gradient(135deg, #3b82f6, #2563eb)' } :
+                        currentTask.status === 'pending' ? { background: 'linear-gradient(135deg, #f59e0b, #d97706)' } :
+                        { background: 'linear-gradient(135deg, #ef4444, #dc2626)' }
+                      }>
                         {currentTask.status === 'completed' && '已完成'}
                         {currentTask.status === 'processing' && '处理中'}
                         {currentTask.status === 'pending' && '等待中'}
@@ -505,32 +540,33 @@ export default function StudioPage() {
                     {currentTask.status === 'processing' && (
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-500">进度</span>
-                          <span className="font-medium">{currentTask.progress || 0}%</span>
+                          <span style={{ color: '#a78bfa' }}>进度</span>
+                          <span className="font-medium text-white">{currentTask.progress || 0}%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="w-full rounded-full h-2" style={{ background: 'rgba(139, 92, 246, 0.2)' }}>
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${currentTask.progress || 0}%` }}
-                            className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full"
+                            className="h-2 rounded-full"
+                            style={{ background: 'linear-gradient(90deg, #ec4899, #8b5cf6)' }}
                           />
                         </div>
                       </div>
                     )}
-                    
+
                     {currentTask.status === 'completed' && currentTask.video_url && (
                       <div className="mt-4">
                         <video
                           src={currentTask.video_url}
                           controls
-                          className="w-full rounded-lg"
+                          className="w-full rounded-2xl shadow-lg"
                         />
                       </div>
                     )}
-                    
+
                     {currentTask.status === 'failed' && currentTask.error && (
-                      <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                        <p className="text-sm text-red-600">{currentTask.error}</p>
+                      <div className="p-3 rounded-2xl border" style={{ background: 'rgba(239, 68, 68, 0.2)', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+                        <p className="text-sm" style={{ color: '#fca5a5' }}>{currentTask.error}</p>
                       </div>
                     )}
                   </div>
@@ -539,9 +575,15 @@ export default function StudioPage() {
             </AnimatePresence>
 
             {/* 快捷模板 */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="font-bold mb-4">💡 灵感模板</h3>
-              
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="rounded-3xl p-6 border"
+              style={{ background: 'rgba(30, 20, 60, 0.8)', borderColor: 'rgba(139, 92, 246, 0.3)' }}
+            >
+              <h3 className="font-bold mb-4 text-white">💡 灵感模板</h3>
+
               <div className="space-y-3">
                 {[
                   {
@@ -567,7 +609,7 @@ export default function StudioPage() {
                   },
                 ].map((template) => (
                   <div key={template.category} className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">
+                    <h4 className="text-sm font-medium mb-2" style={{ color: '#a78bfa' }}>
                       {template.category}
                     </h4>
                     <div className="space-y-2">
@@ -575,7 +617,8 @@ export default function StudioPage() {
                         <button
                           key={idx}
                           onClick={() => setPrompt(item)}
-                          className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-purple-50 rounded-lg transition-colors"
+                          className="w-full text-left px-3 py-2 text-sm rounded-xl transition-all hover:shadow-md"
+                          style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#e9d5ff', border: '1px solid rgba(139, 92, 246, 0.3)' }}
                         >
                           {item.length > 30 ? `${item.slice(0, 30)}...` : item}
                         </button>
@@ -584,7 +627,7 @@ export default function StudioPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </main>

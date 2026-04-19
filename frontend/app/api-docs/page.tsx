@@ -240,12 +240,12 @@ export default function ApiDocsPage() {
     }
   }
 
-  // 解析schema引用
-  const resolveSchema = (schema: SchemaObject | undefined): SchemaObject | null => {
+  // 解析schema引用（此函数目前未使用，预留）
+  const resolveSchemaRef = (schema: SchemaObject | undefined, rootSchema: OpenAPISchema | null): SchemaObject | null => {
     if (!schema) return null
-    if (schema.$ref && schema.$ref.startsWith('#/components/schemas/') && schema.components) {
+    if (schema.$ref && typeof schema.$ref === 'string' && schema.$ref.startsWith('#/components/schemas/')) {
       const refName = schema.$ref.replace('#/components/schemas/', '')
-      return schema.components.schemas?.[refName] || null
+      return rootSchema?.components?.schemas?.[refName] || null
     }
     return schema
   }
@@ -473,7 +473,7 @@ export default function ApiDocsPage() {
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {operation.parameters.map((param) => (
+                                      {operation.parameters.map((param: Parameter) => (
                                         <tr key={param.name} className="border-b border-white/5">
                                           <td className="p-3 font-mono text-cyan-400">{param.name}</td>
                                           <td className="p-3 text-purple-400">{param.in}</td>
@@ -521,7 +521,7 @@ export default function ApiDocsPage() {
                               <div className="mb-4">
                                 <h4 className="text-sm font-medium mb-2">响应</h4>
                                 <div className="space-y-2">
-                                  {Object.entries(operation.responses).map(([code, response]) => (
+                                  {Object.entries(operation.responses as Record<string, Response>).map(([code, response]) => (
                                     <div key={code} className="bg-black/30 rounded-lg p-4">
                                       <div className="flex items-center gap-2 mb-2">
                                         <span className={cn(
