@@ -13,7 +13,7 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request, Header, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.config import settings
 
@@ -68,12 +68,13 @@ class FeishuMessageEvent(BaseModel):
 
 class FeishuWebhookRequest(BaseModel):
     """飞书 Webhook 请求"""
-    schema: str = "2.0"
+    schema_version: str = Field(default="2.0", alias="schema")
     header: FeishuEventHeader
     event: FeishuMessageEvent
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 
 class FeishuCardMessage(BaseModel):

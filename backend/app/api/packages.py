@@ -146,7 +146,7 @@ async def activate_package(
 @router.get("/quota/calculate")
 async def calculate_quota(
     duration_seconds: int = Query(..., ge=5, le=60),
-    quality_mode: str = Query("balanced", regex="^(fast|balanced|premium)$"),
+    quality_mode: str = Query("balanced", pattern="^(fast|balanced|premium)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
