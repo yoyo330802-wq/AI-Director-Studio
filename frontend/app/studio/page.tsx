@@ -117,7 +117,7 @@ export default function StudioPage() {
       }
 
       return api.createTask({
-        mode: qualityModeMap[mode],
+        quality_mode: qualityModeMap[mode],
         prompt,
         negative_prompt: negativePrompt,
         duration,

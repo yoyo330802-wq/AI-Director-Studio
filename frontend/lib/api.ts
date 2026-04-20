@@ -106,7 +106,7 @@ class ApiClient {
   // ============ 生成相关 ============
 
   async createTask(params: {
-    mode?: string  // 'cost' | 'balanced' | 'quality'
+    quality_mode: string  // 'cost' | 'balanced' | 'quality'
     prompt: string
     negative_prompt?: string
     duration?: 5 | 10
