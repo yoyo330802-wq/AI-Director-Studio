@@ -1,3 +1,12 @@
 {
+  "/_not-found": "app/_not-found.js",
+  "/admin/page": "app/admin/page.js",
+  "/api-docs/page": "app/api-docs/page.js",
+  "/gallery/page": "app/gallery/page.js",
+  "/page": "app/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/pricing/page": "app/pricing/page.js",
+  "/sdk-docs/page": "app/sdk-docs/page.js",
+  "/templates/page": "app/templates/page.js",
   "/studio/page": "app/studio/page.js"
 }
