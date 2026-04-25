@@ -269,9 +269,14 @@ class Phase3GANScore(PhaseExecutor):
             for fb_file in sorted(feedback_dir.glob("feedback-*.md")):
                 content = fb_file.read_text(encoding="utf-8")
                 sprint_name = fb_file.stem.replace("feedback-", "Sprint ")
-                # 提取分数
+                # 归一化: "Sprint 001" → "Sprint S1", "Sprint 01" → "Sprint S1"
+                import re
+                sprint_num_match = re.search(r"Sprint\s+0*(\d+)", sprint_name)
+                if sprint_num_match:
+                    sprint_name = f"Sprint S{sprint_num_match.group(1)}"
+                # 提取分数 - 匹配多种格式: "Overall Score:", "Total Score:", "Score:"
                 for line in content.split("\n"):
-                    if "Overall Score:" in line or "Overall" in line:
+                    if "Overall Score:" in line or "Total Score:" in line or re.search(r"\*\*Score\*\*|^\s*Score:", line, re.IGNORECASE):
                         import re
                         match = re.search(r"(\d+\.?\d*)\s*/\s*10", line)
                         if match:
